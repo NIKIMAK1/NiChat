@@ -8,9 +8,9 @@
 		"Nikita Maksimow"
 	],
 	"contact": {
-		"sources": "https://github.com/FabricMC/fabric-example-mod"
+		"sources": "https://github.com/NIKIMAK1/NiChat"
 	},
-	"license": "CC0-1.0",
+	"license": "GNU GPLv3",
 	"icon": "assets/nichat/icon.png",
 	"environment": "*",
 	"entrypoints": {
