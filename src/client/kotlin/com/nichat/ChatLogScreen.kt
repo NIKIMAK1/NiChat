@@ -121,14 +121,6 @@ class ChatLogScreen : ChatScreen("") {
         val logBottomY = this.height - chatInputAreaHeight - config.logChatLogInputPadding
         val logTopY = 0
 
-        // Надежно парсим цвет из строки конфига
-        val textColor = try {
-            val cleanHex = config.logTextColor.removePrefix("#")
-            ("FF$cleanHex").toLong(16).toInt()
-        } catch (e: NumberFormatException) {
-            0xFFFFFFFF.toInt()
-        }
-
         context.enableScissor(logTopY, logTopY, screenWidth, logBottomY)
         var cursorY = (logBottomY + scrollOffset).toInt()
 
@@ -169,10 +161,10 @@ class ChatLogScreen : ChatScreen("") {
                 textLeftX = blockLeftX + (totalBlockWidth - widestLine) / 2
             }
 
-            val textOffsetY = (contentHeight - textBlockHeight) / 2
+            val textOffsetY = (contentHeight - textBlockHeight) / 2 + 1
             var lineY = contentTopY + textOffsetY
             for (line in lines) {
-                context.drawTextWithShadow(font, line, textLeftX, lineY, textColor)
+                context.drawTextWithShadow(font, line, textLeftX, lineY, 0xFFFFFFFF.toInt())
                 lineY += font.fontHeight
             }
             cursorY = blockTopY - config.logPaddingBetweenMessages

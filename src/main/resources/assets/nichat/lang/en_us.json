@@ -4,8 +4,12 @@
 
   "text.autoconfig.nichat.title": "NiChat Configuration",
 
+  "text.autoconfig.nichat.category.general": "General",
   "text.autoconfig.nichat.category.hud": "HUD Notifications",
   "text.autoconfig.nichat.category.chat_log": "Chat Log Screen",
+
+  "text.autoconfig.nichat.option.general.nicknameColor": "Nickname Color (RRGGBB)",
+  "text.autoconfig.nichat.option.general.randomNicknameColor": "Random Nickname Color",
 
   "text.autoconfig.nichat.option.hud.hudMessageDuration": "Duration (seconds)",
   "text.autoconfig.nichat.option.hud.hudBackgroundOpacity": "Background Opacity",
@@ -24,7 +28,6 @@
   "text.autoconfig.nichat.option.chatLog.logBackgroundOpacity": "Log Background Opacity",
   "text.autoconfig.nichat.option.chatLog.logWidthScale": "Width Scale",
   "text.autoconfig.nichat.option.chatLog.logScrollSpeed": "Scroll Speed",
-  "text.autoconfig.nichat.option.chatLog.logTextColor": "Text Color (RRGGBB)",
   "text.autoconfig.nichat.option.chatLog.logHeadSize": "Player Head Size",
   "text.autoconfig.nichat.option.chatLog.logPadding": "Internal Padding",
   "text.autoconfig.nichat.option.chatLog.logHeadTextSpacing": "Spacing (Head & Text)",

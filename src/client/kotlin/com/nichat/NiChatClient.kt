@@ -1,7 +1,6 @@
 package com.nichat
 
 import com.mojang.authlib.GameProfile
-import com.nichat.config.HorizontalAlignment
 import com.nichat.config.NiChatConfig
 import me.shedaniel.autoconfig.AutoConfig
 import me.shedaniel.autoconfig.serializer.GsonConfigSerializer
@@ -15,7 +14,7 @@ import net.minecraft.client.gui.PlayerSkinDrawer
 import net.minecraft.client.option.KeyBinding
 import net.minecraft.client.util.DefaultSkinHelper
 import net.minecraft.client.util.InputUtil
-import net.minecraft.text.Text
+import net.minecraft.text.*
 import org.lwjgl.glfw.GLFW
 import org.slf4j.LoggerFactory
 import java.util.*
@@ -96,9 +95,9 @@ object NiChatClient : ClientModInitializer {
 			val boxHeight = max(font.fontHeight * lines.size, headSize) + padding * 2
 
 			val posX = when (hudConfig.hudHorizontalAlignment) {
-				HorizontalAlignment.LEFT -> 10
-				HorizontalAlignment.CENTER -> (context.scaledWindowWidth - boxWidth) / 2
-				HorizontalAlignment.RIGHT -> context.scaledWindowWidth - boxWidth - 10
+				com.nichat.config.HorizontalAlignment.LEFT -> 10
+				com.nichat.config.HorizontalAlignment.CENTER -> (context.scaledWindowWidth - boxWidth) / 2
+				com.nichat.config.HorizontalAlignment.RIGHT -> context.scaledWindowWidth - boxWidth - 10
 			}
 
 			val posY = context.scaledWindowHeight - boxHeight - hudConfig.hudVerticalOffset
@@ -119,7 +118,7 @@ object NiChatClient : ClientModInitializer {
 				textLeftX = posX + (boxWidth - textWidth) / 2
 			}
 
-			var textTopY = contentTopY + (boxHeight - padding * 2 - lines.size * font.fontHeight) / 2
+			var textTopY = contentTopY + (boxHeight - padding * 2 - lines.size * font.fontHeight) / 2 + 1
 			for (line in lines) {
 				context.drawTextWithShadow(font, line, textLeftX, textTopY, 0xFFFFFFFF.toInt())
 				textTopY += font.fontHeight
@@ -127,10 +126,49 @@ object NiChatClient : ClientModInitializer {
 		}
 	}
 
+	private fun reformatChatMessage(originalMessage: Text, profile: GameProfile): Text {
+		val content = originalMessage.content
+		if (content is TranslatableTextContent && content.key == "chat.type.text" && content.args.size >= 2) {
+			val messageBody = content.args[1] as? Text ?: return originalMessage
+
+			val color: TextColor
+			if (config.general.randomNicknameColor) {
+				val random = Random(profile.name.hashCode().toLong())
+				val r = random.nextInt(155) + 100
+				val g = random.nextInt(155) + 100
+				val b = random.nextInt(155) + 100
+				color = TextColor.fromRgb((r shl 16) or (g shl 8) or b)
+			} else {
+				color = try {
+					TextColor.fromRgb(Integer.parseInt(config.general.nicknameColor.removePrefix("#"), 16))
+				} catch (e: NumberFormatException) {
+					logger.warn("Invalid nickname color format: ${config.general.nicknameColor}")
+					TextColor.fromRgb(0xFFFFFF)
+				}
+			}
+
+			val nickComponent = Text.empty()
+				.append(Text.literal("[").setStyle(Style.EMPTY.withColor(color)))
+				.append(Text.literal(profile.name).setStyle(Style.EMPTY.withColor(color)))
+				.append(Text.literal("]").setStyle(Style.EMPTY.withColor(color)))
+				.append(Text.literal(": ").setStyle(Style.EMPTY))
+
+			return Text.empty().append(nickComponent).append(messageBody)
+		}
+
+		return originalMessage
+	}
+
 	private fun processNewMessage(content: Text, profile: GameProfile) {
 		if (content.string.isBlank()) return
 
-		val newMessage = DisplayMessage(content, profile, System.nanoTime())
+		val finalContent = if (profile != SYSTEM_PROFILE) {
+			reformatChatMessage(content, profile)
+		} else {
+			content
+		}
+
+		val newMessage = DisplayMessage(finalContent, profile, System.nanoTime())
 		allMessages.add(newMessage)
 
 		if (allMessages.size > config.chatLog.maxLogSize) {
