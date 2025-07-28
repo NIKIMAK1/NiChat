@@ -33,8 +33,8 @@ class NiChatConfig : ConfigData {
         var hudWidthScale: Float = 0.5f
         var hudVerticalOffset: Int = 40
         var hudHorizontalAlignment: HorizontalAlignment = HorizontalAlignment.CENTER
-        var hudHeadSize: Int = 16
-        var hudPadding: Int = 3
+        var hudHeadSize: Int = 13
+        var hudPadding: Int = 5
         var hudHeadTextSpacing: Int = 4
     }
 
@@ -43,8 +43,8 @@ class NiChatConfig : ConfigData {
         var logBackgroundOpacity: Float = 0.8f
         var logWidthScale: Float = 0.9f
         var logScrollSpeed: Double = 1.5
-        var logHeadSize: Int = 16
-        var logPadding: Int = 4
+        var logHeadSize: Int = 13
+        var logPadding: Int = 5
         var logHeadTextSpacing: Int = 5
         var logPaddingBetweenMessages: Int = 4
         var logChatLogInputPadding: Int = 5
