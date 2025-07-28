@@ -1,6 +1,6 @@
 # NiChat
 
-**NiChat** is a client mod for Minecraft 1.21.7 that replaces the default chat system with a fully customizable on-screen HUD. Designed for clarity and usability, NiChat moves the chat from the top left corner to the center of the screen and displays messages at the bottom in a minimalist, distraction-free style.
+**NiChat** is a client mod for Minecraft 1.21.6 - 1.21.8 that replaces the default chat system with a fully customizable on-screen HUD. Designed for clarity and usability, NiChat moves the chat from the top left corner to the center of the screen and displays messages at the bottom in a minimalist, distraction-free style.
 
 ## Features
 
@@ -9,7 +9,7 @@
 
 ## Installation
 
-1. Install [Fabric Loader](https://fabricmc.net/use/) for Minecraft 1.21.7.
+1. Install [Fabric Loader](https://fabricmc.net/use/) for Minecraft 1.21.6 - 1.21.8.
 2. Download the latest version of the mod from the [Releases](https://github.com/NIKIMAK1/NiChat/releases) website.
 3. Download dependencies.
 3. Place the mod file and dependencies `.jar` in the `mods/` folder.
@@ -17,12 +17,13 @@
 
 ## Compatibility
 
-- Minecraft: **1.21.6 - 1.21.7**
+- Minecraft: **1.21.6 - 1.21.8**
 - Requires: **Fabric Loader**
 - Written in: **Kotlin**
 - Dependencies:
 1. [Cloth Config API] https://modrinth.com/mod/cloth-config
-2. [Mod Menu] https://modrinth.com/mod/modmenu
+2. [Fabric Language Kotlin] https://modrinth.com/mod/fabric-language-kotlin
+3. [Mod Menu] https://modrinth.com/mod/modmenu
 
 ## Known Limitations
 
