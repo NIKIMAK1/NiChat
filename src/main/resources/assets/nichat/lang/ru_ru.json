@@ -1,0 +1,34 @@
+{
+  "text.autoconfig.nichat.title": "Настройки NiChat",
+
+  "text.autoconfig.nichat.category.general": "Основные",
+  "text.autoconfig.nichat.category.hud": "HUD Уведомления",
+  "text.autoconfig.nichat.category.chat_log": "Экран истории чата",
+
+  "text.autoconfig.nichat.option.general.nicknameColor": "Цвет ника (RRGGBB)",
+  "text.autoconfig.nichat.option.general.randomNicknameColor": "Случайный цвет ников",
+
+  "text.autoconfig.nichat.option.hud.hudMessageDuration": "Длительность (секунды)",
+  "text.autoconfig.nichat.option.hud.hudBackgroundOpacity": "Непрозрачность фона",
+  "text.autoconfig.nichat.option.hud.hudWidthScale": "Масштаб ширины",
+  "text.autoconfig.nichat.option.hud.hudVerticalOffset": "Отступ по вертикали (от низа)",
+  "text.autoconfig.nichat.option.hud.hudHorizontalAlignment": "Выравнивание по горизонтали",
+  "text.autoconfig.nichat.option.hud.hudHeadSize": "Размер головы игрока",
+  "text.autoconfig.nichat.option.hud.hudPadding": "Внутренний отступ",
+  "text.autoconfig.nichat.option.hud.hudHeadTextSpacing": "Отступ (между головой и текстом)",
+
+  "text.autoconfig.nichat.enum.HorizontalAlignment.LEFT": "Слева",
+  "text.autoconfig.nichat.enum.HorizontalAlignment.CENTER": "По центру",
+  "text.autoconfig.nichat.enum.HorizontalAlignment.RIGHT": "Справа",
+
+  "text.autoconfig.nichat.option.chatLog.maxLogSize": "Макс. размер истории",
+  "text.autoconfig.nichat.option.chatLog.logBackgroundOpacity": "Непрозрачность фона",
+  "text.autoconfig.nichat.option.chatLog.inputFieldOpacity": "Непрозрачность поля ввода",
+  "text.autoconfig.nichat.option.chatLog.logWidthScale": "Масштаб ширины",
+  "text.autoconfig.nichat.option.chatLog.logScrollSpeed": "Скорость прокрутки",
+  "text.autoconfig.nichat.option.chatLog.logHeadSize": "Размер головы игрока",
+  "text.autoconfig.nichat.option.chatLog.logPadding": "Внутренний отступ",
+  "text.autoconfig.nichat.option.chatLog.logHeadTextSpacing": "Отступ (между головой и текстом)",
+  "text.autoconfig.nichat.option.chatLog.logPaddingBetweenMessages": "Отступ (между сообщениями)",
+  "text.autoconfig.nichat.option.chatLog.logChatLogInputPadding": "Отступ (под историей)"
+}

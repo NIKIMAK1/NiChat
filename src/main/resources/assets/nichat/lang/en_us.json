@@ -1,0 +1,34 @@
+{
+  "text.autoconfig.nichat.title": "NiChat Configuration",
+
+  "text.autoconfig.nichat.category.general": "General",
+  "text.autoconfig.nichat.category.hud": "HUD Notifications",
+  "text.autoconfig.nichat.category.chat_log": "Chat Log Screen",
+
+  "text.autoconfig.nichat.option.general.nicknameColor": "Nickname Color (RRGGBB)",
+  "text.autoconfig.nichat.option.general.randomNicknameColor": "Random Nickname Color",
+
+  "text.autoconfig.nichat.option.hud.hudMessageDuration": "Duration (seconds)",
+  "text.autoconfig.nichat.option.hud.hudBackgroundOpacity": "Background Opacity",
+  "text.autoconfig.nichat.option.hud.hudWidthScale": "Width Scale",
+  "text.autoconfig.nichat.option.hud.hudVerticalOffset": "Vertical Offset (from bottom)",
+  "text.autoconfig.nichat.option.hud.hudHorizontalAlignment": "Horizontal Alignment",
+  "text.autoconfig.nichat.option.hud.hudHeadSize": "Player Head Size",
+  "text.autoconfig.nichat.option.hud.hudPadding": "Internal Padding",
+  "text.autoconfig.nichat.option.hud.hudHeadTextSpacing": "Spacing (Head & Text)",
+
+  "text.autoconfig.nichat.enum.HorizontalAlignment.LEFT": "Left",
+  "text.autoconfig.nichat.enum.HorizontalAlignment.CENTER": "Center",
+  "text.autoconfig.nichat.enum.HorizontalAlignment.RIGHT": "Right",
+
+  "text.autoconfig.nichat.option.chatLog.maxLogSize": "Max Log Size",
+  "text.autoconfig.nichat.option.chatLog.logBackgroundOpacity": "Log Background Opacity",
+  "text.autoconfig.nichat.option.chatLog.inputFieldOpacity": "Input Field Opacity",
+  "text.autoconfig.nichat.option.chatLog.logWidthScale": "Width Scale",
+  "text.autoconfig.nichat.option.chatLog.logScrollSpeed": "Scroll Speed",
+  "text.autoconfig.nichat.option.chatLog.logHeadSize": "Player Head Size",
+  "text.autoconfig.nichat.option.chatLog.logPadding": "Internal Padding",
+  "text.autoconfig.nichat.option.chatLog.logHeadTextSpacing": "Spacing (Head & Text)",
+  "text.autoconfig.nichat.option.chatLog.logPaddingBetweenMessages": "Padding (Between Messages)",
+  "text.autoconfig.nichat.option.chatLog.logChatLogInputPadding": "Padding (Below Log)"
+}
