@@ -1,0 +1,50 @@
+{
+	"schemaVersion": 1,
+	"id": "nichat",
+	"version": "${version}",
+	"name": "NiChat",
+	"description": "Mod for new chat history and pop-up messages from chat.",
+	"authors": [
+		"NIKIMAK"
+	],
+	"contact": {
+		"sources": "https://github.com/NIKIMAK1/NiChat"
+	},
+	"license": "GNU GPLv3",
+	"icon": "assets/nichat/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			{
+				"value": "com.nichat.NiChat",
+				"adapter": "kotlin"
+			}
+		],
+		"client": [
+			{
+				"value": "com.nichat.NiChatClient",
+				"adapter": "kotlin"
+			}
+		],
+      "modmenu": [
+        "com.nichat.config.ModMenuIntegration"
+      ]
+	},
+	"mixins": [
+		"nichat.mixins.json",
+		{
+			"config": "nichat.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.17.3",
+		"minecraft": "~1.21.10",
+		"java": ">=21",
+		"fabric-api": "*",
+		"fabric-language-kotlin": "*"
+	},
+	"suggests": {
+		"another-mod": "*"
+	}
+}
