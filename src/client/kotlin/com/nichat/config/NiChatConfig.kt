@@ -33,6 +33,7 @@ class NiChatConfig : ConfigData {
 
     class HudSettings {
         var hudMessageDuration: Long = 5L
+        var hudMaxMessages: Int = 3
         var hudBackgroundOpacity: Float = 0.7f
         var hudWidthScale: Float = 0.5f
         var hudVerticalOffset: Int = 50
@@ -40,6 +41,7 @@ class NiChatConfig : ConfigData {
         var hudHeadSize: Int = 13
         var hudPadding: Int = 5
         var hudHeadTextSpacing: Int = 4
+        var hudPaddingBetweenMessages: Int = 4
     }
 
     class ChatLogSettings {

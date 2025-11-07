@@ -9,6 +9,7 @@
   "text.autoconfig.nichat.option.general.randomNicknameColor": "Случайный цвет ников",
 
   "text.autoconfig.nichat.option.hud.hudMessageDuration": "Длительность (секунды)",
+  "text.autoconfig.nichat.option.hud.hudMaxMessages": "Макс. количество сообщений",
   "text.autoconfig.nichat.option.hud.hudBackgroundOpacity": "Непрозрачность фона",
   "text.autoconfig.nichat.option.hud.hudWidthScale": "Масштаб ширины",
   "text.autoconfig.nichat.option.hud.hudVerticalOffset": "Отступ по вертикали (от низа)",
@@ -16,6 +17,7 @@
   "text.autoconfig.nichat.option.hud.hudHeadSize": "Размер головы игрока",
   "text.autoconfig.nichat.option.hud.hudPadding": "Внутренний отступ",
   "text.autoconfig.nichat.option.hud.hudHeadTextSpacing": "Отступ (между головой и текстом)",
+  "text.autoconfig.nichat.option.hud.hudPaddingBetweenMessages": "Отступ (между сообщениями)",
 
   "text.autoconfig.nichat.enum.HorizontalAlignment.LEFT": "Слева",
   "text.autoconfig.nichat.enum.HorizontalAlignment.CENTER": "По центру",

@@ -9,6 +9,7 @@
   "text.autoconfig.nichat.option.general.randomNicknameColor": "Random Nickname Color",
 
   "text.autoconfig.nichat.option.hud.hudMessageDuration": "Duration (seconds)",
+  "text.autoconfig.nichat.option.hud.hudMaxMessages": "Max Messages to Display",
   "text.autoconfig.nichat.option.hud.hudBackgroundOpacity": "Background Opacity",
   "text.autoconfig.nichat.option.hud.hudWidthScale": "Width Scale",
   "text.autoconfig.nichat.option.hud.hudVerticalOffset": "Vertical Offset (from bottom)",
@@ -16,6 +17,7 @@
   "text.autoconfig.nichat.option.hud.hudHeadSize": "Player Head Size",
   "text.autoconfig.nichat.option.hud.hudPadding": "Internal Padding",
   "text.autoconfig.nichat.option.hud.hudHeadTextSpacing": "Spacing (Head & Text)",
+  "text.autoconfig.nichat.option.hud.hudPaddingBetweenMessages": "Padding (Between Messages)",
 
   "text.autoconfig.nichat.enum.HorizontalAlignment.LEFT": "Left",
   "text.autoconfig.nichat.enum.HorizontalAlignment.CENTER": "Center",

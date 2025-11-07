@@ -92,12 +92,15 @@ class NiChatClient : ClientModInitializer {
         fun renderCustomHud(context: DrawContext, client: MinecraftClient) {
             val hudConfig = config.hud
             val durationNanos = TimeUnit.SECONDS.toNanos(hudConfig.hudMessageDuration)
+            val currentTime = System.nanoTime()
 
-            val messageToRender = synchronized(allMessages) {
-                allMessages.lastOrNull { message ->
-                    System.nanoTime() - message.receivedTimeNano <= durationNanos
-                }
-            } ?: return
+            val messagesToRender = synchronized(allMessages) {
+                allMessages.filter { message ->
+                    currentTime - message.receivedTimeNano <= durationNanos
+                }.takeLast(hudConfig.hudMaxMessages) // Берём последние N сообщений
+            }
+
+            if (messagesToRender.isEmpty()) return
 
             val font = client.textRenderer
             val screenWidth = context.scaledWindowWidth
@@ -107,45 +110,65 @@ class NiChatClient : ClientModInitializer {
             val headSize = hudConfig.hudHeadSize
             val padding = hudConfig.hudPadding
             val headTextSpacing = hudConfig.hudHeadTextSpacing
-            val drawHead = messageToRender.senderProfile != SYSTEM_PROFILE
+            val messagePadding = hudConfig.hudPaddingBetweenMessages
 
-            val lines = font.wrapLines(messageToRender.content, maxTextWidth)
-            val textWidth = lines.maxOfOrNull { font.getWidth(it) } ?: 0
+            data class MessageBox(
+                val message: DisplayMessage,
+                val lines: List<net.minecraft.text.OrderedText>,
+                val boxWidth: Int,
+                val boxHeight: Int,
+                val textWidth: Int,
+                val drawHead: Boolean
+            )
 
-            val headSpace = if (drawHead) headSize + headTextSpacing else 0
-            val boxWidth = headSpace + textWidth + padding * 2
-            val boxHeight = max(font.fontHeight * lines.size, if (drawHead) headSize else 0) + padding * 2
+            val messageBoxes = messagesToRender.map { message ->
+                val drawHead = message.senderProfile != SYSTEM_PROFILE
+                val lines = font.wrapLines(message.content, maxTextWidth)
+                val textWidth = lines.maxOfOrNull { font.getWidth(it) } ?: 0
+                val headSpace = if (drawHead) headSize + headTextSpacing else 0
+                val boxWidth = headSpace + textWidth + padding * 2
+                val boxHeight = max(font.fontHeight * lines.size, if (drawHead) headSize else 0) + padding * 2
 
-            val posX = when (hudConfig.hudHorizontalAlignment) {
-                HorizontalAlignment.LEFT -> 10
-                HorizontalAlignment.CENTER -> (screenWidth - boxWidth) / 2
-                HorizontalAlignment.RIGHT -> screenWidth - boxWidth - 10
-            }
-            val posY = screenHeight - boxHeight - hudConfig.hudVerticalOffset
-
-            val backgroundColor = client.options.getTextBackgroundColor(hudConfig.hudBackgroundOpacity)
-            context.fill(posX, posY, posX + boxWidth, posY + boxHeight, backgroundColor)
-
-            val contentTopY = posY + padding
-            val textLeftX: Int
-
-            if (drawHead) {
-                val contentLeftX = posX + padding
-                val profile = messageToRender.senderProfile
-                val playerListEntry = client.networkHandler?.getPlayerListEntry(profile.id)
-                val skinTextures = playerListEntry?.skinTextures ?: DefaultSkinHelper.getSkinTextures(profile.id)
-                PlayerSkinDrawer.draw(context, skinTextures, contentLeftX, contentTopY, headSize)
-                textLeftX = contentLeftX + headSize + headTextSpacing
-            } else {
-                textLeftX = posX + (boxWidth - textWidth) / 2
+                MessageBox(message, lines, boxWidth, boxHeight, textWidth, drawHead)
             }
 
-            val verticalCenterOffset = (boxHeight - padding * 2 - lines.size * font.fontHeight) / 2
-            var textTopY = contentTopY + verticalCenterOffset + 1
+            val totalHeight = messageBoxes.sumOf { it.boxHeight } + messagePadding * (messageBoxes.size - 1)
 
-            for (line in lines) {
-                context.drawTextWithShadow(font, line, textLeftX, textTopY, 0xFFFFFFFF.toInt())
-                textTopY += font.fontHeight
+            var currentY = screenHeight - hudConfig.hudVerticalOffset - totalHeight
+
+            for (box in messageBoxes) {
+                val posX = when (hudConfig.hudHorizontalAlignment) {
+                    HorizontalAlignment.LEFT -> 10
+                    HorizontalAlignment.CENTER -> (screenWidth - box.boxWidth) / 2
+                    HorizontalAlignment.RIGHT -> screenWidth - box.boxWidth - 10
+                }
+
+                val backgroundColor = client.options.getTextBackgroundColor(hudConfig.hudBackgroundOpacity)
+                context.fill(posX, currentY, posX + box.boxWidth, currentY + box.boxHeight, backgroundColor)
+
+                val contentTopY = currentY + padding
+                val textLeftX: Int
+
+                if (box.drawHead) {
+                    val contentLeftX = posX + padding
+                    val profile = box.message.senderProfile
+                    val playerListEntry = client.networkHandler?.getPlayerListEntry(profile.id)
+                    val skinTextures = playerListEntry?.skinTextures ?: DefaultSkinHelper.getSkinTextures(profile.id)
+                    PlayerSkinDrawer.draw(context, skinTextures, contentLeftX, contentTopY, headSize)
+                    textLeftX = contentLeftX + headSize + headTextSpacing
+                } else {
+                    textLeftX = posX + (box.boxWidth - box.textWidth) / 2
+                }
+
+                val verticalCenterOffset = (box.boxHeight - padding * 2 - box.lines.size * font.fontHeight) / 2
+                var textTopY = contentTopY + verticalCenterOffset + 1
+
+                for (line in box.lines) {
+                    context.drawTextWithShadow(font, line, textLeftX, textTopY, 0xFFFFFFFF.toInt())
+                    textTopY += font.fontHeight
+                }
+
+                currentY += box.boxHeight + messagePadding
             }
         }
     }
