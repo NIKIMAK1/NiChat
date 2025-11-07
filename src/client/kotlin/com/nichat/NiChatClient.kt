@@ -64,15 +64,18 @@ class NiChatClient : ClientModInitializer {
                     val b = random.nextInt(155) + 100
                     TextColor.fromRgb((r shl 16) or (g shl 8) or b)
                 } else {
-                    try {
-                        val colorHex = config.general.nicknameColor.let { if (it.startsWith("#")) it else "#$it" }
-                        TextColor.parse(colorHex) as TextColor
-                    } catch (e: Exception) {
-                        logger.warn("Invalid nickname color in config: '{}'", config.general.nicknameColor)
-                        TextColor.fromRgb(0x55FF55)
-                    }
-                }
+                    val rawColor = config.general.nicknameColor.trim()
+                    val colorHex = rawColor.removePrefix("#")
 
+                    val colorInt = try {
+                        Integer.parseInt(colorHex, 16)
+                    } catch (e: Exception) {
+                        logger.warn("Invalid nickname color in config: '{}'", rawColor)
+                        0x55FF55
+                    }
+
+                    TextColor.fromRgb(colorInt)
+                }
 
                 return Text.empty()
                     .append(Text.literal("[").setStyle(Style.EMPTY.withColor(color)))
