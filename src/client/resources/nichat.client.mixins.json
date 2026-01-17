@@ -3,7 +3,7 @@
 	"package": "com.nichat.mixin.client",
 	"compatibilityLevel": "JAVA_21",
 	"client": [
-        "ChatHudMixin",
+		"ChatComponentMixin",
         "ChatScreenMixin"
 	],
 	"injectors": {

@@ -7,12 +7,17 @@ import me.shedaniel.autoconfig.AutoConfig
 import me.shedaniel.autoconfig.serializer.Toml4jConfigSerializer
 import net.fabricmc.api.ClientModInitializer
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents
-import net.minecraft.client.MinecraftClient
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.client.gui.PlayerSkinDrawer
-import net.minecraft.client.util.DefaultSkinHelper
-import net.minecraft.text.*
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.gui.components.PlayerFaceRenderer
+import net.minecraft.client.resources.DefaultPlayerSkin
+import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.Style
+import net.minecraft.network.chat.TextColor
+import net.minecraft.network.chat.contents.TranslatableContents
+import net.minecraft.util.FormattedCharSequence
 import org.slf4j.LoggerFactory
+
 import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.math.max
@@ -32,7 +37,7 @@ class NiChatClient : ClientModInitializer {
         )
 
         @JvmStatic
-        fun processNewMessage(content: Text, profile: GameProfile) {
+        fun processNewMessage(content: Component, profile: GameProfile) {
             if (content.string.isBlank()) return
 
             val finalContent = reformatChatMessage(content, profile)
@@ -47,15 +52,15 @@ class NiChatClient : ClientModInitializer {
             logger.debug("Message added: ${finalContent.string}")
         }
 
-        private fun reformatChatMessage(originalMessage: Text, profile: GameProfile): Text {
+        private fun reformatChatMessage(originalMessage: Component, profile: GameProfile): Component {
             if (profile == SYSTEM_PROFILE) {
                 return originalMessage
             }
 
-            val content = originalMessage.content
-            if (content is TranslatableTextContent && content.key == "chat.type.text" && content.args.size >= 2) {
-                val senderName = (content.args[0] as? Text)?.string ?: profile.name
-                val messageBody = content.args[1] as? Text ?: return originalMessage
+            val content = originalMessage.contents
+            if (content is TranslatableContents && content.key == "chat.type.text" && content.args.size >= 2) {
+                val senderName = (content.args[0] as? Component)?.string ?: profile.name
+                val messageBody = content.args[1] as? Component ?: return originalMessage
 
                 val color: TextColor = if (config.general.randomNicknameColor) {
                     val random = Random(senderName.hashCode().toLong())
@@ -77,11 +82,11 @@ class NiChatClient : ClientModInitializer {
                     TextColor.fromRgb(colorInt)
                 }
 
-                return Text.empty()
-                    .append(Text.literal("[").setStyle(Style.EMPTY.withColor(color)))
-                    .append(Text.literal(senderName).setStyle(Style.EMPTY.withColor(color)))
-                    .append(Text.literal("]").setStyle(Style.EMPTY.withColor(color)))
-                    .append(Text.literal(": ").setStyle(Style.EMPTY.withColor(TextColor.fromRgb(0xFFFFFF))))
+                return Component.empty()
+                    .append(Component.literal("[").setStyle(Style.EMPTY.withColor(color)))
+                    .append(Component.literal(senderName).setStyle(Style.EMPTY.withColor(color)))
+                    .append(Component.literal("]").setStyle(Style.EMPTY.withColor(color)))
+                    .append(Component.literal(": ").setStyle(Style.EMPTY.withColor(TextColor.fromRgb(0xFFFFFF))))
                     .append(messageBody)
             }
 
@@ -89,7 +94,7 @@ class NiChatClient : ClientModInitializer {
         }
 
         @JvmStatic
-        fun renderCustomHud(context: DrawContext, client: MinecraftClient) {
+        fun renderCustomHud(context: GuiGraphics, client: Minecraft) {
             val hudConfig = config.hud
             val durationNanos = TimeUnit.SECONDS.toNanos(hudConfig.hudMessageDuration)
             val currentTime = System.nanoTime()
@@ -102,9 +107,9 @@ class NiChatClient : ClientModInitializer {
 
             if (messagesToRender.isEmpty()) return
 
-            val font = client.textRenderer
-            val screenWidth = context.scaledWindowWidth
-            val screenHeight = context.scaledWindowHeight
+            val font = client.font
+            val screenWidth = context.guiWidth()
+            val screenHeight = context.guiHeight()
             val maxTextWidth = (screenWidth * hudConfig.hudWidthScale).toInt()
 
             val headSize = hudConfig.hudHeadSize
@@ -114,7 +119,7 @@ class NiChatClient : ClientModInitializer {
 
             data class MessageBox(
                 val message: DisplayMessage,
-                val lines: List<net.minecraft.text.OrderedText>,
+                val lines: List<FormattedCharSequence>,
                 val boxWidth: Int,
                 val boxHeight: Int,
                 val textWidth: Int,
@@ -123,11 +128,11 @@ class NiChatClient : ClientModInitializer {
 
             val messageBoxes = messagesToRender.map { message ->
                 val drawHead = message.senderProfile != SYSTEM_PROFILE
-                val lines = font.wrapLines(message.content, maxTextWidth)
-                val textWidth = lines.maxOfOrNull { font.getWidth(it) } ?: 0
+                val lines = font.split(message.content, maxTextWidth)
+                val textWidth = lines.maxOfOrNull { font.width(it) } ?: 0
                 val headSpace = if (drawHead) headSize + headTextSpacing else 0
                 val boxWidth = headSpace + textWidth + padding * 2
-                val boxHeight = max(font.fontHeight * lines.size, if (drawHead) headSize else 0) + padding * 2
+                val boxHeight = max(font.lineHeight * lines.size, if (drawHead) headSize else 0) + padding * 2
 
                 MessageBox(message, lines, boxWidth, boxHeight, textWidth, drawHead)
             }
@@ -143,7 +148,7 @@ class NiChatClient : ClientModInitializer {
                     HorizontalAlignment.RIGHT -> screenWidth - box.boxWidth - 10
                 }
 
-                val backgroundColor = client.options.getTextBackgroundColor(hudConfig.hudBackgroundOpacity)
+                val backgroundColor = client.options.getBackgroundColor(hudConfig.hudBackgroundOpacity)
                 context.fill(posX, currentY, posX + box.boxWidth, currentY + box.boxHeight, backgroundColor)
 
                 val contentTopY = currentY + padding
@@ -152,20 +157,20 @@ class NiChatClient : ClientModInitializer {
                 if (box.drawHead) {
                     val contentLeftX = posX + padding
                     val profile = box.message.senderProfile
-                    val playerListEntry = client.networkHandler?.getPlayerListEntry(profile.id)
-                    val skinTextures = playerListEntry?.skinTextures ?: DefaultSkinHelper.getSkinTextures(profile.id)
-                    PlayerSkinDrawer.draw(context, skinTextures, contentLeftX, contentTopY, headSize)
+                    val playerListEntry = client.connection?.getPlayerInfo(profile.id)
+                    val skinTextures = playerListEntry?.skin ?: DefaultPlayerSkin.get(profile.id)
+                    PlayerFaceRenderer.draw(context, skinTextures, contentLeftX, contentTopY, headSize)
                     textLeftX = contentLeftX + headSize + headTextSpacing
                 } else {
                     textLeftX = posX + (box.boxWidth - box.textWidth) / 2
                 }
 
-                val verticalCenterOffset = (box.boxHeight - padding * 2 - box.lines.size * font.fontHeight) / 2
+                val verticalCenterOffset = (box.boxHeight - padding * 2 - box.lines.size * font.lineHeight) / 2
                 var textTopY = contentTopY + verticalCenterOffset + 1
 
                 for (line in box.lines) {
-                    context.drawTextWithShadow(font, line, textLeftX, textTopY, 0xFFFFFFFF.toInt())
-                    textTopY += font.fontHeight
+                    context.drawString(font, line, textLeftX, textTopY, 0xFFFFFFFF.toInt())
+                    textTopY += font.lineHeight
                 }
 
                 currentY += box.boxHeight + messagePadding
