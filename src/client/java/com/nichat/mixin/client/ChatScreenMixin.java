@@ -52,10 +52,8 @@ public abstract class ChatScreenMixin extends Screen {
         this.scrollOffset = 0.0;
     }
 
-    // ИСПРАВЛЕНИЕ: Вместо @Redirect используем @Inject в конец метода render
-    @Inject(method = "render", at = @At("TAIL"))
+    @Inject(method = "render", at = @At("HEAD"))
     private void onRender(GuiGraphics context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
-        // Рисуем наш кастомный чат
         nichat_renderCustomChatHistory(context, mouseX, mouseY);
     }
 
@@ -107,7 +105,6 @@ public abstract class ChatScreenMixin extends Screen {
         Font font = this.nichat_mc.font;
         int screenWidth = context.guiWidth();
         int maxTextWidth = (int)(screenWidth * this.nichat_config.getLogWidthScale());
-        // Проверка на null для input, так как init может вызваться позже
         if (this.input == null) return;
 
         int logBottomY = this.input.getY() - this.nichat_config.getLogChatLogInputPadding();
@@ -183,7 +180,7 @@ public abstract class ChatScreenMixin extends Screen {
 
     @Unique
     private void nichat_recalculateTotalContentHeight() {
-        if (this.width == 0) return; // Защита от деления на ноль при инициализации
+        if (this.width == 0) return;
         Font font = this.nichat_mc.font;
         int maxTextWidth = (int)(this.width * this.nichat_config.getLogWidthScale());
         double calculatedHeight = 0.0;

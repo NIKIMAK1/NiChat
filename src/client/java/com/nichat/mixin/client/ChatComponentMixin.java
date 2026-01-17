@@ -55,25 +55,22 @@ public class ChatComponentMixin {
     )
     private void onRender(
             GuiGraphics context,
-            Font font,       // <--- Добавлено (требует лог ошибки)
+            Font font,
             int currentTick,
             int mouseX,
             int mouseY,
-            boolean focused, // <--- Добавлено
-            boolean unknown, // <--- Добавлено (второй boolean из лога)
+            boolean focused,
+            boolean unknown,
             CallbackInfo ci
     ) {
-        // Если открыт какой-то экран (например, ChatScreen),
-        // мы просто отменяем ванильный рендер (так как ChatScreenMixin сам все нарисует).
+
         if (this.minecraft.screen != null) {
             ci.cancel();
             return;
         }
 
-        // Если экран закрыт (мы в игре), рисуем наш кастомный HUD
         NiChatClient.renderCustomHud(context, this.minecraft);
 
-        // И отменяем ванильный HUD
         ci.cancel();
     }
 }
