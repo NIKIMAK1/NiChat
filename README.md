@@ -17,7 +17,6 @@
 
 ## Compatibility
 
-- Minecraft: **1.21.10**
 - Requires: **Fabric Loader**
 - Written in: **Kotlin, Java**
 - Dependencies:
