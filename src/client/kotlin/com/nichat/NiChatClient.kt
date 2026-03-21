@@ -3,8 +3,7 @@ package com.nichat
 import com.mojang.authlib.GameProfile
 import com.nichat.config.HorizontalAlignment
 import com.nichat.config.NiChatConfig
-import me.shedaniel.autoconfig.AutoConfig
-import me.shedaniel.autoconfig.serializer.Toml4jConfigSerializer
+import com.nichat.config.NiChatConfigManager
 import net.fabricmc.api.ClientModInitializer
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents
 import net.minecraft.client.Minecraft
@@ -28,7 +27,7 @@ class NiChatClient : ClientModInitializer {
         @JvmStatic val logger = LoggerFactory.getLogger("nichat")
 
         @JvmStatic val config: NiChatConfig
-            get() = AutoConfig.getConfigHolder(NiChatConfig::class.java).config
+            get() = NiChatConfigManager.config
 
         @JvmStatic val allMessages: MutableList<DisplayMessage> = mutableListOf()
         @JvmStatic val SYSTEM_PROFILE = GameProfile(
@@ -179,8 +178,8 @@ class NiChatClient : ClientModInitializer {
     }
 
     override fun onInitializeClient() {
-        AutoConfig.register(NiChatConfig::class.java, ::Toml4jConfigSerializer)
-        logger.info("NiChat initialized and config registered!")
+        NiChatConfigManager.load()
+        logger.info("NiChat initialized and config loaded")
 
         ClientReceiveMessageEvents.ALLOW_CHAT.register { message, _, sender, _, _ ->
             processNewMessage(message, sender ?: SYSTEM_PROFILE)

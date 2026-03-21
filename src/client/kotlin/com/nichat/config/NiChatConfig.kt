@@ -1,32 +1,17 @@
 package com.nichat.config
 
-import me.shedaniel.autoconfig.ConfigData
-import me.shedaniel.autoconfig.annotation.Config
-import me.shedaniel.autoconfig.annotation.ConfigEntry
-
 enum class HorizontalAlignment {
     LEFT,
     CENTER,
     RIGHT
 }
 
-@Config(name = "nichat")
-class NiChatConfig : ConfigData {
-
-    @ConfigEntry.Category("general")
-    @ConfigEntry.Gui.TransitiveObject
+class NiChatConfig {
     var general: GeneralSettings = GeneralSettings()
-
-    @ConfigEntry.Category("hud")
-    @ConfigEntry.Gui.TransitiveObject
     var hud: HudSettings = HudSettings()
-
-    @ConfigEntry.Category("chat_log")
-    @ConfigEntry.Gui.TransitiveObject
     var chatLog: ChatLogSettings = ChatLogSettings()
 
     class GeneralSettings {
-        @ConfigEntry.ColorPicker
         var nicknameColor: String = "14b414"
         var randomNicknameColor: Boolean = false
     }

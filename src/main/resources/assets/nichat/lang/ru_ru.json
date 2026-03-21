@@ -32,5 +32,9 @@
   "text.autoconfig.nichat.option.chatLog.logPadding": "Внутренний отступ",
   "text.autoconfig.nichat.option.chatLog.logHeadTextSpacing": "Отступ (между головой и текстом)",
   "text.autoconfig.nichat.option.chatLog.logPaddingBetweenMessages": "Отступ (между сообщениями)",
-  "text.autoconfig.nichat.option.chatLog.logChatLogInputPadding": "Отступ (под историей)"
+  "text.autoconfig.nichat.option.chatLog.logChatLogInputPadding": "Отступ (под историей)",
+  "nichat.config.reset": "Сбросить вкладку",
+  "nichat.config.description.general": "Базовые настройки отображения имён и поведения чата.",
+  "nichat.config.description.hud": "Настройка всплывающих HUD-сообщений на основном экране.",
+  "nichat.config.description.chat_log": "Параметры экрана истории чата и прокрутки."
 }

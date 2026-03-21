@@ -32,5 +32,9 @@
   "text.autoconfig.nichat.option.chatLog.logPadding": "Internal Padding",
   "text.autoconfig.nichat.option.chatLog.logHeadTextSpacing": "Spacing (Head & Text)",
   "text.autoconfig.nichat.option.chatLog.logPaddingBetweenMessages": "Padding (Between Messages)",
-  "text.autoconfig.nichat.option.chatLog.logChatLogInputPadding": "Padding (Below Log)"
+  "text.autoconfig.nichat.option.chatLog.logChatLogInputPadding": "Padding (Below Log)",
+  "nichat.config.reset": "Reset Tab",
+  "nichat.config.description.general": "Basic settings for names and chat presentation.",
+  "nichat.config.description.hud": "Configure popup HUD messages shown during gameplay.",
+  "nichat.config.description.chat_log": "Adjust the chat history screen and scrolling behavior."
 }

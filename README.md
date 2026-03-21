@@ -11,17 +11,18 @@
 
 1. Install [Fabric Loader](https://fabricmc.net/use/) for Minecraft.
 2. Download the latest version of the mod from the [Releases](https://github.com/NIKIMAK1/NiChat/releases) website.
-3. Download dependencies.
-3. Place the mod file and dependencies `.jar` in the `mods/` folder.
-4. Launch Minecraft and enjoy the new chat interface.
+3. Place the mod `.jar` in the `mods/` folder.
+4. Install [Fabric Language Kotlin](https://modrinth.com/mod/fabric-language-kotlin).
+5. Install [Mod Menu](https://modrinth.com/mod/modmenu) if you want to open the settings GUI from the mods list.
+6. Launch Minecraft and enjoy the new chat interface.
 
 ## Compatibility
 
 - Requires: **Fabric Loader**
 - Written in: **Kotlin, Java**
 - Dependencies:
-1. [Cloth Config API] https://modrinth.com/mod/cloth-config
-2. [Fabric Language Kotlin] https://modrinth.com/mod/fabric-language-kotlin
+1. [Fabric Language Kotlin] https://modrinth.com/mod/fabric-language-kotlin
+2. [Mod Menu] https://modrinth.com/mod/modmenu (optional, for the settings GUI entry)
 
 ## License
 
