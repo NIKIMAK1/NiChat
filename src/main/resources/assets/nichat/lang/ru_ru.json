@@ -36,5 +36,6 @@
   "nichat.config.reset": "Сбросить вкладку",
   "nichat.config.description.general": "Базовые настройки отображения имён и поведения чата.",
   "nichat.config.description.hud": "Настройка всплывающих HUD-сообщений на основном экране.",
-  "nichat.config.description.chat_log": "Параметры экрана истории чата и прокрутки."
+  "nichat.config.description.chat_log": "Параметры экрана истории чата и прокрутки.",
+  "modmenu.descriptionTranslation.nichat": "Мод с удобной историей чата и всплывающими сообщениями поверх игрового интерфейса."
 }

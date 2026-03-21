@@ -130,27 +130,29 @@ class NiChatClient : ClientModInitializer {
                 val lines = font.split(message.content, maxTextWidth)
                 val textWidth = lines.maxOfOrNull { font.width(it) } ?: 0
                 val headSpace = if (drawHead) headSize + headTextSpacing else 0
+                val contentHeight = max(font.lineHeight * lines.size, if (drawHead) headSize else 0)
                 val boxWidth = headSpace + textWidth + padding * 2
-                val boxHeight = max(font.lineHeight * lines.size, if (drawHead) headSize else 0) + padding * 2
+                val boxHeight = contentHeight + padding * 2
 
                 MessageBox(message, lines, boxWidth, boxHeight, textWidth, drawHead)
             }
 
-            val totalHeight = messageBoxes.sumOf { it.boxHeight } + messagePadding * (messageBoxes.size - 1)
+            var cursorY = screenHeight - hudConfig.hudVerticalOffset
 
-            var currentY = screenHeight - hudConfig.hudVerticalOffset - totalHeight
-
-            for (box in messageBoxes) {
+            for (box in messageBoxes.asReversed()) {
                 val posX = when (hudConfig.hudHorizontalAlignment) {
                     HorizontalAlignment.LEFT -> 10
                     HorizontalAlignment.CENTER -> (screenWidth - box.boxWidth) / 2
                     HorizontalAlignment.RIGHT -> screenWidth - box.boxWidth - 10
                 }
 
+                val boxBottomY = cursorY
+                val boxTopY = boxBottomY - box.boxHeight
                 val backgroundColor = client.options.getBackgroundColor(hudConfig.hudBackgroundOpacity)
-                context.fill(posX, currentY, posX + box.boxWidth, currentY + box.boxHeight, backgroundColor)
+                context.fill(posX, boxTopY, posX + box.boxWidth, boxBottomY, backgroundColor)
 
-                val contentTopY = currentY + padding
+                val contentTopY = boxTopY + padding
+                val contentHeight = box.boxHeight - padding * 2
                 val textLeftX: Int
 
                 if (box.drawHead) {
@@ -158,21 +160,22 @@ class NiChatClient : ClientModInitializer {
                     val profile = box.message.senderProfile
                     val playerListEntry = client.connection?.getPlayerInfo(profile.id)
                     val skinTextures = playerListEntry?.skin ?: DefaultPlayerSkin.get(profile.id)
-                    PlayerFaceRenderer.draw(context, skinTextures, contentLeftX, contentTopY, headSize)
+                    val headY = contentTopY + (contentHeight - headSize) / 2
+                    PlayerFaceRenderer.draw(context, skinTextures, contentLeftX, headY, headSize)
                     textLeftX = contentLeftX + headSize + headTextSpacing
                 } else {
                     textLeftX = posX + (box.boxWidth - box.textWidth) / 2
                 }
 
-                val verticalCenterOffset = (box.boxHeight - padding * 2 - box.lines.size * font.lineHeight) / 2
-                var textTopY = contentTopY + verticalCenterOffset + 1
+                val verticalCenterOffset = (contentHeight - box.lines.size * font.lineHeight) / 2
+                var textTopY = contentTopY + verticalCenterOffset
 
                 for (line in box.lines) {
                     context.drawString(font, line, textLeftX, textTopY, 0xFFFFFFFF.toInt())
                     textTopY += font.lineHeight
                 }
 
-                currentY += box.boxHeight + messagePadding
+                cursorY = boxTopY - messagePadding
             }
         }
     }

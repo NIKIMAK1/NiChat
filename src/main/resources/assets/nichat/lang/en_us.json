@@ -36,5 +36,6 @@
   "nichat.config.reset": "Reset Tab",
   "nichat.config.description.general": "Basic settings for names and chat presentation.",
   "nichat.config.description.hud": "Configure popup HUD messages shown during gameplay.",
-  "nichat.config.description.chat_log": "Adjust the chat history screen and scrolling behavior."
+  "nichat.config.description.chat_log": "Adjust the chat history screen and scrolling behavior.",
+  "modmenu.descriptionTranslation.nichat": "A mod with improved chat history and popup messages rendered over the game HUD."
 }
