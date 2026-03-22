@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory
 import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.math.max
+import kotlin.math.roundToInt
 
 class NiChatClient : ClientModInitializer {
 
@@ -96,6 +97,9 @@ class NiChatClient : ClientModInitializer {
         fun renderCustomHud(context: GuiGraphics, client: Minecraft) {
             val hudConfig = config.hud
             val durationNanos = TimeUnit.SECONDS.toNanos(hudConfig.hudMessageDuration)
+            val fadeInDurationNanos = TimeUnit.MILLISECONDS.toNanos(hudConfig.hudFadeInDurationMs.coerceAtLeast(0L))
+            val fadeOutDurationNanos = TimeUnit.MILLISECONDS.toNanos(hudConfig.hudFadeOutDurationMs.coerceAtLeast(0L))
+            val animationOffsetPx = hudConfig.hudAnimationOffsetPx.coerceAtLeast(0).toFloat()
             val currentTime = System.nanoTime()
 
             val messagesToRender = synchronized(allMessages) {
@@ -140,6 +144,15 @@ class NiChatClient : ClientModInitializer {
             var cursorY = screenHeight - hudConfig.hudVerticalOffset
 
             for (box in messageBoxes.asReversed()) {
+                val messageAge = currentTime - box.message.receivedTimeNano
+                val animationProgress = getHudAnimationProgress(
+                    messageAge,
+                    durationNanos,
+                    fadeInDurationNanos,
+                    fadeOutDurationNanos
+                )
+                if (animationProgress <= 0f) continue
+
                 val posX = when (hudConfig.hudHorizontalAlignment) {
                     HorizontalAlignment.LEFT -> 10
                     HorizontalAlignment.CENTER -> (screenWidth - box.boxWidth) / 2
@@ -148,10 +161,16 @@ class NiChatClient : ClientModInitializer {
 
                 val boxBottomY = cursorY
                 val boxTopY = boxBottomY - box.boxHeight
-                val backgroundColor = client.options.getBackgroundColor(hudConfig.hudBackgroundOpacity)
-                context.fill(posX, boxTopY, posX + box.boxWidth, boxBottomY, backgroundColor)
+                val backgroundColor = scaleColorAlpha(
+                    client.options.getBackgroundColor(hudConfig.hudBackgroundOpacity),
+                    animationProgress
+                )
+                val animatedOffsetY = ((1f - animationProgress) * animationOffsetPx).roundToInt()
+                val animatedTopY = boxTopY + animatedOffsetY
+                val animatedBottomY = boxBottomY + animatedOffsetY
+                context.fill(posX, animatedTopY, posX + box.boxWidth, animatedBottomY, backgroundColor)
 
-                val contentTopY = boxTopY + padding
+                val contentTopY = animatedTopY + padding
                 val contentHeight = box.boxHeight - padding * 2
                 val textLeftX: Int
 
@@ -161,7 +180,14 @@ class NiChatClient : ClientModInitializer {
                     val playerListEntry = client.connection?.getPlayerInfo(profile.id)
                     val skinTextures = playerListEntry?.skin ?: DefaultPlayerSkin.get(profile.id)
                     val headY = contentTopY + (contentHeight - headSize) / 2
-                    PlayerFaceRenderer.draw(context, skinTextures, contentLeftX, headY, headSize)
+                    PlayerFaceRenderer.draw(
+                        context,
+                        skinTextures,
+                        contentLeftX,
+                        headY,
+                        headSize,
+                        scaleColorAlpha(0xFFFFFFFF.toInt(), animationProgress)
+                    )
                     textLeftX = contentLeftX + headSize + headTextSpacing
                 } else {
                     textLeftX = posX + (box.boxWidth - box.textWidth) / 2
@@ -169,14 +195,49 @@ class NiChatClient : ClientModInitializer {
 
                 val verticalCenterOffset = (contentHeight - box.lines.size * font.lineHeight) / 2
                 var textTopY = contentTopY + verticalCenterOffset
+                val textColor = scaleColorAlpha(0xFFFFFFFF.toInt(), animationProgress)
 
                 for (line in box.lines) {
-                    context.drawString(font, line, textLeftX, textTopY, 0xFFFFFFFF.toInt())
+                    context.drawString(font, line, textLeftX, textTopY, textColor)
                     textTopY += font.lineHeight
                 }
 
                 cursorY = boxTopY - messagePadding
             }
+        }
+
+        private fun getHudAnimationProgress(
+            messageAgeNanos: Long,
+            totalDurationNanos: Long,
+            fadeInDurationNanos: Long,
+            fadeOutDurationNanos: Long
+        ): Float {
+            if (totalDurationNanos <= 0L) return 1f
+
+            val fadeInProgress = if (fadeInDurationNanos <= 0L) {
+                1f
+            } else {
+                (messageAgeNanos.toDouble() / fadeInDurationNanos.toDouble()).toFloat().coerceIn(0f, 1f)
+            }
+
+            val remainingNanos = totalDurationNanos - messageAgeNanos
+            val fadeOutProgress = if (fadeOutDurationNanos <= 0L) {
+                1f
+            } else {
+                (remainingNanos.toDouble() / fadeOutDurationNanos.toDouble()).toFloat().coerceIn(0f, 1f)
+            }
+
+            return smoothStep(minOf(fadeInProgress, fadeOutProgress))
+        }
+
+        private fun smoothStep(value: Float): Float {
+            val clamped = value.coerceIn(0f, 1f)
+            return clamped * clamped * (3f - 2f * clamped)
+        }
+
+        private fun scaleColorAlpha(color: Int, alphaMultiplier: Float): Int {
+            val scaledAlpha = (((color ushr 24) and 0xFF) * alphaMultiplier.coerceIn(0f, 1f)).roundToInt()
+            return (color and 0x00FFFFFF) or (scaledAlpha.coerceIn(0, 255) shl 24)
         }
     }
 

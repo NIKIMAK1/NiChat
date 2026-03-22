@@ -56,6 +56,9 @@ object NiChatConfigManager {
         target.hud.hudMaxMessages = source.hud.hudMaxMessages
         target.hud.hudBackgroundOpacity = source.hud.hudBackgroundOpacity
         target.hud.hudWidthScale = source.hud.hudWidthScale
+        target.hud.hudFadeInDurationMs = source.hud.hudFadeInDurationMs
+        target.hud.hudFadeOutDurationMs = source.hud.hudFadeOutDurationMs
+        target.hud.hudAnimationOffsetPx = source.hud.hudAnimationOffsetPx
         target.hud.hudVerticalOffset = source.hud.hudVerticalOffset
         target.hud.hudHorizontalAlignment = source.hud.hudHorizontalAlignment
         target.hud.hudHeadSize = source.hud.hudHeadSize

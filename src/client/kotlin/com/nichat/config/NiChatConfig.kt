@@ -21,6 +21,9 @@ class NiChatConfig {
         var hudMaxMessages: Int = 3
         var hudBackgroundOpacity: Float = 0.7f
         var hudWidthScale: Float = 0.5f
+        var hudFadeInDurationMs: Long = 220L
+        var hudFadeOutDurationMs: Long = 320L
+        var hudAnimationOffsetPx: Int = 6
         var hudVerticalOffset: Int = 50
         var hudHorizontalAlignment: HorizontalAlignment = HorizontalAlignment.CENTER
         var hudHeadSize: Int = 13

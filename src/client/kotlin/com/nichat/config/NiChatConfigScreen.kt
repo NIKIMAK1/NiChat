@@ -38,6 +38,9 @@ class NiChatConfigScreen(
     private var hudMaxMessagesBox: EditBox? = null
     private var hudBackgroundOpacityBox: EditBox? = null
     private var hudWidthScaleBox: EditBox? = null
+    private var hudFadeInDurationMsBox: EditBox? = null
+    private var hudFadeOutDurationMsBox: EditBox? = null
+    private var hudAnimationOffsetPxBox: EditBox? = null
     private var hudVerticalOffsetBox: EditBox? = null
     private var hudHorizontalAlignmentButton: CycleButton<HorizontalAlignment>? = null
     private var hudHeadSizeBox: EditBox? = null
@@ -154,6 +157,16 @@ class NiChatConfigScreen(
             EntryItem(Component.translatable("text.autoconfig.nichat.option.hud.hudWidthScale"), hudWidthScaleBox!!, 150)
         )
 
+        hudFadeInDurationMsBox = createTextField(Component.translatable("text.autoconfig.nichat.option.hud.hudFadeInDurationMs"), config.hudFadeInDurationMs.toString())
+        hudFadeOutDurationMsBox = createTextField(Component.translatable("text.autoconfig.nichat.option.hud.hudFadeOutDurationMs"), config.hudFadeOutDurationMs.toString())
+        list.addDoubleRow(
+            EntryItem(Component.translatable("text.autoconfig.nichat.option.hud.hudFadeInDurationMs"), hudFadeInDurationMsBox!!, 150),
+            EntryItem(Component.translatable("text.autoconfig.nichat.option.hud.hudFadeOutDurationMs"), hudFadeOutDurationMsBox!!, 150)
+        )
+
+        hudAnimationOffsetPxBox = createTextField(Component.translatable("text.autoconfig.nichat.option.hud.hudAnimationOffsetPx"), config.hudAnimationOffsetPx.toString(), 250)
+        list.addSingleRow(Component.translatable("text.autoconfig.nichat.option.hud.hudAnimationOffsetPx"), hudAnimationOffsetPxBox!!, 250)
+
         hudVerticalOffsetBox = createTextField(Component.translatable("text.autoconfig.nichat.option.hud.hudVerticalOffset"), config.hudVerticalOffset.toString())
         hudHorizontalAlignmentButton = createCycleField(
             Component.translatable("text.autoconfig.nichat.option.hud.hudHorizontalAlignment"),
@@ -255,6 +268,9 @@ class NiChatConfigScreen(
                 config.hud.hudMaxMessages = defaults.hud.hudMaxMessages
                 config.hud.hudBackgroundOpacity = defaults.hud.hudBackgroundOpacity
                 config.hud.hudWidthScale = defaults.hud.hudWidthScale
+                config.hud.hudFadeInDurationMs = defaults.hud.hudFadeInDurationMs
+                config.hud.hudFadeOutDurationMs = defaults.hud.hudFadeOutDurationMs
+                config.hud.hudAnimationOffsetPx = defaults.hud.hudAnimationOffsetPx
                 config.hud.hudVerticalOffset = defaults.hud.hudVerticalOffset
                 config.hud.hudHorizontalAlignment = defaults.hud.hudHorizontalAlignment
                 config.hud.hudHeadSize = defaults.hud.hudHeadSize
@@ -296,6 +312,9 @@ class NiChatConfigScreen(
                 hud.hudMaxMessages = parseInt(hudMaxMessagesBox?.value, hud.hudMaxMessages)
                 hud.hudBackgroundOpacity = parseFloat(hudBackgroundOpacityBox?.value, hud.hudBackgroundOpacity)
                 hud.hudWidthScale = parseFloat(hudWidthScaleBox?.value, hud.hudWidthScale)
+                hud.hudFadeInDurationMs = parseLong(hudFadeInDurationMsBox?.value, hud.hudFadeInDurationMs)
+                hud.hudFadeOutDurationMs = parseLong(hudFadeOutDurationMsBox?.value, hud.hudFadeOutDurationMs)
+                hud.hudAnimationOffsetPx = parseInt(hudAnimationOffsetPxBox?.value, hud.hudAnimationOffsetPx)
                 hud.hudVerticalOffset = parseInt(hudVerticalOffsetBox?.value, hud.hudVerticalOffset)
                 hud.hudHorizontalAlignment = hudHorizontalAlignmentButton?.value ?: hud.hudHorizontalAlignment
                 hud.hudHeadSize = parseInt(hudHeadSizeBox?.value, hud.hudHeadSize)
@@ -331,6 +350,9 @@ class NiChatConfigScreen(
         target.hud.hudMaxMessages = source.hud.hudMaxMessages
         target.hud.hudBackgroundOpacity = source.hud.hudBackgroundOpacity
         target.hud.hudWidthScale = source.hud.hudWidthScale
+        target.hud.hudFadeInDurationMs = source.hud.hudFadeInDurationMs
+        target.hud.hudFadeOutDurationMs = source.hud.hudFadeOutDurationMs
+        target.hud.hudAnimationOffsetPx = source.hud.hudAnimationOffsetPx
         target.hud.hudVerticalOffset = source.hud.hudVerticalOffset
         target.hud.hudHorizontalAlignment = source.hud.hudHorizontalAlignment
         target.hud.hudHeadSize = source.hud.hudHeadSize
