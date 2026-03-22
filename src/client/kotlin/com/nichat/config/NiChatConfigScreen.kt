@@ -13,7 +13,7 @@ import net.minecraft.network.chat.Component
 
 class NiChatConfigScreen(
     private val parent: Screen?
-) : Screen(Component.translatable("text.autoconfig.nichat.title")) {
+) : Screen(Component.translatable("nichat.config.title")) {
 
     private enum class Category {
         GENERAL,
@@ -69,9 +69,9 @@ class NiChatConfigScreen(
         val bottomY = this.height - 27
         val listBottom = bottomY - 8
 
-        addRenderableWidget(categoryButton(tabStartX, tabY, tabWidth, Category.GENERAL, Component.translatable("text.autoconfig.nichat.category.general")))
-        addRenderableWidget(categoryButton(tabStartX + tabWidth + tabGap, tabY, tabWidth, Category.HUD, Component.translatable("text.autoconfig.nichat.category.hud")))
-        addRenderableWidget(categoryButton(tabStartX + (tabWidth + tabGap) * 2, tabY, tabWidth, Category.CHAT_LOG, Component.translatable("text.autoconfig.nichat.category.chat_log")))
+        addRenderableWidget(categoryButton(tabStartX, tabY, tabWidth, Category.GENERAL, Component.translatable("nichat.config.category.general")))
+        addRenderableWidget(categoryButton(tabStartX + tabWidth + tabGap, tabY, tabWidth, Category.HUD, Component.translatable("nichat.config.category.hud")))
+        addRenderableWidget(categoryButton(tabStartX + (tabWidth + tabGap) * 2, tabY, tabWidth, Category.CHAT_LOG, Component.translatable("nichat.config.category.chat_log")))
 
         configList = addRenderableWidget(ConfigList(Minecraft.getInstance(), this.width, listTop, listBottom).also { list ->
             populateEntries(list)
@@ -130,104 +130,104 @@ class NiChatConfigScreen(
 
     private fun initGeneralFields(list: ConfigList) {
         val config = NiChatConfigManager.config.general
-        nicknameColorBox = createTextField(Component.translatable("text.autoconfig.nichat.option.general.nicknameColor"), config.nicknameColor, 250)
-        list.addSingleRow(Component.translatable("text.autoconfig.nichat.option.general.nicknameColor"), nicknameColorBox!!, 250)
+        nicknameColorBox = createTextField(Component.translatable("nichat.config.option.general.nicknameColor"), config.nicknameColor, 250)
+        list.addSingleRow(Component.translatable("nichat.config.option.general.nicknameColor"), nicknameColorBox!!, 250)
 
         randomNicknameColorButton = createBooleanField(
-            Component.translatable("text.autoconfig.nichat.option.general.randomNicknameColor"),
+            Component.translatable("nichat.config.option.general.randomNicknameColor"),
             config.randomNicknameColor,
             250
         )
-        list.addSingleRow(Component.translatable("text.autoconfig.nichat.option.general.randomNicknameColor"), randomNicknameColorButton!!, 250)
+        list.addSingleRow(Component.translatable("nichat.config.option.general.randomNicknameColor"), randomNicknameColorButton!!, 250)
     }
 
     private fun initHudFields(list: ConfigList) {
         val config = NiChatConfigManager.config.hud
-        hudMessageDurationBox = createTextField(Component.translatable("text.autoconfig.nichat.option.hud.hudMessageDuration"), config.hudMessageDuration.toString())
-        hudMaxMessagesBox = createTextField(Component.translatable("text.autoconfig.nichat.option.hud.hudMaxMessages"), config.hudMaxMessages.toString())
+        hudMessageDurationBox = createTextField(Component.translatable("nichat.config.option.hud.hudMessageDuration"), config.hudMessageDuration.toString())
+        hudMaxMessagesBox = createTextField(Component.translatable("nichat.config.option.hud.hudMaxMessages"), config.hudMaxMessages.toString())
         list.addDoubleRow(
-            EntryItem(Component.translatable("text.autoconfig.nichat.option.hud.hudMessageDuration"), hudMessageDurationBox!!, 150),
-            EntryItem(Component.translatable("text.autoconfig.nichat.option.hud.hudMaxMessages"), hudMaxMessagesBox!!, 150)
+            EntryItem(Component.translatable("nichat.config.option.hud.hudMessageDuration"), hudMessageDurationBox!!, 150),
+            EntryItem(Component.translatable("nichat.config.option.hud.hudMaxMessages"), hudMaxMessagesBox!!, 150)
         )
 
-        hudBackgroundOpacityBox = createTextField(Component.translatable("text.autoconfig.nichat.option.hud.hudBackgroundOpacity"), config.hudBackgroundOpacity.toString())
-        hudWidthScaleBox = createTextField(Component.translatable("text.autoconfig.nichat.option.hud.hudWidthScale"), config.hudWidthScale.toString())
+        hudBackgroundOpacityBox = createTextField(Component.translatable("nichat.config.option.hud.hudBackgroundOpacity"), config.hudBackgroundOpacity.toString())
+        hudWidthScaleBox = createTextField(Component.translatable("nichat.config.option.hud.hudWidthScale"), config.hudWidthScale.toString())
         list.addDoubleRow(
-            EntryItem(Component.translatable("text.autoconfig.nichat.option.hud.hudBackgroundOpacity"), hudBackgroundOpacityBox!!, 150),
-            EntryItem(Component.translatable("text.autoconfig.nichat.option.hud.hudWidthScale"), hudWidthScaleBox!!, 150)
+            EntryItem(Component.translatable("nichat.config.option.hud.hudBackgroundOpacity"), hudBackgroundOpacityBox!!, 150),
+            EntryItem(Component.translatable("nichat.config.option.hud.hudWidthScale"), hudWidthScaleBox!!, 150)
         )
 
-        hudFadeInDurationMsBox = createTextField(Component.translatable("text.autoconfig.nichat.option.hud.hudFadeInDurationMs"), config.hudFadeInDurationMs.toString())
-        hudFadeOutDurationMsBox = createTextField(Component.translatable("text.autoconfig.nichat.option.hud.hudFadeOutDurationMs"), config.hudFadeOutDurationMs.toString())
+        hudFadeInDurationMsBox = createTextField(Component.translatable("nichat.config.option.hud.hudFadeInDurationMs"), config.hudFadeInDurationMs.toString())
+        hudFadeOutDurationMsBox = createTextField(Component.translatable("nichat.config.option.hud.hudFadeOutDurationMs"), config.hudFadeOutDurationMs.toString())
         list.addDoubleRow(
-            EntryItem(Component.translatable("text.autoconfig.nichat.option.hud.hudFadeInDurationMs"), hudFadeInDurationMsBox!!, 150),
-            EntryItem(Component.translatable("text.autoconfig.nichat.option.hud.hudFadeOutDurationMs"), hudFadeOutDurationMsBox!!, 150)
+            EntryItem(Component.translatable("nichat.config.option.hud.hudFadeInDurationMs"), hudFadeInDurationMsBox!!, 150),
+            EntryItem(Component.translatable("nichat.config.option.hud.hudFadeOutDurationMs"), hudFadeOutDurationMsBox!!, 150)
         )
 
-        hudAnimationOffsetPxBox = createTextField(Component.translatable("text.autoconfig.nichat.option.hud.hudAnimationOffsetPx"), config.hudAnimationOffsetPx.toString(), 250)
-        list.addSingleRow(Component.translatable("text.autoconfig.nichat.option.hud.hudAnimationOffsetPx"), hudAnimationOffsetPxBox!!, 250)
+        hudAnimationOffsetPxBox = createTextField(Component.translatable("nichat.config.option.hud.hudAnimationOffsetPx"), config.hudAnimationOffsetPx.toString(), 250)
+        list.addSingleRow(Component.translatable("nichat.config.option.hud.hudAnimationOffsetPx"), hudAnimationOffsetPxBox!!, 250)
 
-        hudVerticalOffsetBox = createTextField(Component.translatable("text.autoconfig.nichat.option.hud.hudVerticalOffset"), config.hudVerticalOffset.toString())
+        hudVerticalOffsetBox = createTextField(Component.translatable("nichat.config.option.hud.hudVerticalOffset"), config.hudVerticalOffset.toString())
         hudHorizontalAlignmentButton = createCycleField(
-            Component.translatable("text.autoconfig.nichat.option.hud.hudHorizontalAlignment"),
+            Component.translatable("nichat.config.option.hud.hudHorizontalAlignment"),
             HorizontalAlignment.entries.toList(),
             config.hudHorizontalAlignment,
             150
         ) { alignment ->
-            Component.translatable("text.autoconfig.nichat.enum.HorizontalAlignment.${alignment.name}")
+            Component.translatable("nichat.config.enum.HorizontalAlignment.${alignment.name}")
         }
         list.addDoubleRow(
-            EntryItem(Component.translatable("text.autoconfig.nichat.option.hud.hudVerticalOffset"), hudVerticalOffsetBox!!, 150),
-            EntryItem(Component.translatable("text.autoconfig.nichat.option.hud.hudHorizontalAlignment"), hudHorizontalAlignmentButton!!, 150)
+            EntryItem(Component.translatable("nichat.config.option.hud.hudVerticalOffset"), hudVerticalOffsetBox!!, 150),
+            EntryItem(Component.translatable("nichat.config.option.hud.hudHorizontalAlignment"), hudHorizontalAlignmentButton!!, 150)
         )
 
-        hudHeadSizeBox = createTextField(Component.translatable("text.autoconfig.nichat.option.hud.hudHeadSize"), config.hudHeadSize.toString())
-        hudPaddingBox = createTextField(Component.translatable("text.autoconfig.nichat.option.hud.hudPadding"), config.hudPadding.toString())
+        hudHeadSizeBox = createTextField(Component.translatable("nichat.config.option.hud.hudHeadSize"), config.hudHeadSize.toString())
+        hudPaddingBox = createTextField(Component.translatable("nichat.config.option.hud.hudPadding"), config.hudPadding.toString())
         list.addDoubleRow(
-            EntryItem(Component.translatable("text.autoconfig.nichat.option.hud.hudHeadSize"), hudHeadSizeBox!!, 150),
-            EntryItem(Component.translatable("text.autoconfig.nichat.option.hud.hudPadding"), hudPaddingBox!!, 150)
+            EntryItem(Component.translatable("nichat.config.option.hud.hudHeadSize"), hudHeadSizeBox!!, 150),
+            EntryItem(Component.translatable("nichat.config.option.hud.hudPadding"), hudPaddingBox!!, 150)
         )
 
-        hudHeadTextSpacingBox = createTextField(Component.translatable("text.autoconfig.nichat.option.hud.hudHeadTextSpacing"), config.hudHeadTextSpacing.toString())
-        hudPaddingBetweenMessagesBox = createTextField(Component.translatable("text.autoconfig.nichat.option.hud.hudPaddingBetweenMessages"), config.hudPaddingBetweenMessages.toString())
+        hudHeadTextSpacingBox = createTextField(Component.translatable("nichat.config.option.hud.hudHeadTextSpacing"), config.hudHeadTextSpacing.toString())
+        hudPaddingBetweenMessagesBox = createTextField(Component.translatable("nichat.config.option.hud.hudPaddingBetweenMessages"), config.hudPaddingBetweenMessages.toString())
         list.addDoubleRow(
-            EntryItem(Component.translatable("text.autoconfig.nichat.option.hud.hudHeadTextSpacing"), hudHeadTextSpacingBox!!, 150),
-            EntryItem(Component.translatable("text.autoconfig.nichat.option.hud.hudPaddingBetweenMessages"), hudPaddingBetweenMessagesBox!!, 150)
+            EntryItem(Component.translatable("nichat.config.option.hud.hudHeadTextSpacing"), hudHeadTextSpacingBox!!, 150),
+            EntryItem(Component.translatable("nichat.config.option.hud.hudPaddingBetweenMessages"), hudPaddingBetweenMessagesBox!!, 150)
         )
     }
 
     private fun initChatLogFields(list: ConfigList) {
         val config = NiChatConfigManager.config.chatLog
-        maxLogSizeBox = createTextField(Component.translatable("text.autoconfig.nichat.option.chatLog.maxLogSize"), config.maxLogSize.toString())
-        logBackgroundOpacityBox = createTextField(Component.translatable("text.autoconfig.nichat.option.chatLog.logBackgroundOpacity"), config.logBackgroundOpacity.toString())
+        maxLogSizeBox = createTextField(Component.translatable("nichat.config.option.chatLog.maxLogSize"), config.maxLogSize.toString())
+        logBackgroundOpacityBox = createTextField(Component.translatable("nichat.config.option.chatLog.logBackgroundOpacity"), config.logBackgroundOpacity.toString())
         list.addDoubleRow(
-            EntryItem(Component.translatable("text.autoconfig.nichat.option.chatLog.maxLogSize"), maxLogSizeBox!!, 150),
-            EntryItem(Component.translatable("text.autoconfig.nichat.option.chatLog.logBackgroundOpacity"), logBackgroundOpacityBox!!, 150)
+            EntryItem(Component.translatable("nichat.config.option.chatLog.maxLogSize"), maxLogSizeBox!!, 150),
+            EntryItem(Component.translatable("nichat.config.option.chatLog.logBackgroundOpacity"), logBackgroundOpacityBox!!, 150)
         )
 
-        logWidthScaleBox = createTextField(Component.translatable("text.autoconfig.nichat.option.chatLog.logWidthScale"), config.logWidthScale.toString())
-        logScrollSpeedBox = createTextField(Component.translatable("text.autoconfig.nichat.option.chatLog.logScrollSpeed"), config.logScrollSpeed.toString())
+        logWidthScaleBox = createTextField(Component.translatable("nichat.config.option.chatLog.logWidthScale"), config.logWidthScale.toString())
+        logScrollSpeedBox = createTextField(Component.translatable("nichat.config.option.chatLog.logScrollSpeed"), config.logScrollSpeed.toString())
         list.addDoubleRow(
-            EntryItem(Component.translatable("text.autoconfig.nichat.option.chatLog.logWidthScale"), logWidthScaleBox!!, 150),
-            EntryItem(Component.translatable("text.autoconfig.nichat.option.chatLog.logScrollSpeed"), logScrollSpeedBox!!, 150)
+            EntryItem(Component.translatable("nichat.config.option.chatLog.logWidthScale"), logWidthScaleBox!!, 150),
+            EntryItem(Component.translatable("nichat.config.option.chatLog.logScrollSpeed"), logScrollSpeedBox!!, 150)
         )
 
-        logHeadSizeBox = createTextField(Component.translatable("text.autoconfig.nichat.option.chatLog.logHeadSize"), config.logHeadSize.toString())
-        logPaddingBox = createTextField(Component.translatable("text.autoconfig.nichat.option.chatLog.logPadding"), config.logPadding.toString())
+        logHeadSizeBox = createTextField(Component.translatable("nichat.config.option.chatLog.logHeadSize"), config.logHeadSize.toString())
+        logPaddingBox = createTextField(Component.translatable("nichat.config.option.chatLog.logPadding"), config.logPadding.toString())
         list.addDoubleRow(
-            EntryItem(Component.translatable("text.autoconfig.nichat.option.chatLog.logHeadSize"), logHeadSizeBox!!, 150),
-            EntryItem(Component.translatable("text.autoconfig.nichat.option.chatLog.logPadding"), logPaddingBox!!, 150)
+            EntryItem(Component.translatable("nichat.config.option.chatLog.logHeadSize"), logHeadSizeBox!!, 150),
+            EntryItem(Component.translatable("nichat.config.option.chatLog.logPadding"), logPaddingBox!!, 150)
         )
 
-        logHeadTextSpacingBox = createTextField(Component.translatable("text.autoconfig.nichat.option.chatLog.logHeadTextSpacing"), config.logHeadTextSpacing.toString())
-        logPaddingBetweenMessagesBox = createTextField(Component.translatable("text.autoconfig.nichat.option.chatLog.logPaddingBetweenMessages"), config.logPaddingBetweenMessages.toString())
+        logHeadTextSpacingBox = createTextField(Component.translatable("nichat.config.option.chatLog.logHeadTextSpacing"), config.logHeadTextSpacing.toString())
+        logPaddingBetweenMessagesBox = createTextField(Component.translatable("nichat.config.option.chatLog.logPaddingBetweenMessages"), config.logPaddingBetweenMessages.toString())
         list.addDoubleRow(
-            EntryItem(Component.translatable("text.autoconfig.nichat.option.chatLog.logHeadTextSpacing"), logHeadTextSpacingBox!!, 150),
-            EntryItem(Component.translatable("text.autoconfig.nichat.option.chatLog.logPaddingBetweenMessages"), logPaddingBetweenMessagesBox!!, 150)
+            EntryItem(Component.translatable("nichat.config.option.chatLog.logHeadTextSpacing"), logHeadTextSpacingBox!!, 150),
+            EntryItem(Component.translatable("nichat.config.option.chatLog.logPaddingBetweenMessages"), logPaddingBetweenMessagesBox!!, 150)
         )
 
-        logChatLogInputPaddingBox = createTextField(Component.translatable("text.autoconfig.nichat.option.chatLog.logChatLogInputPadding"), config.logChatLogInputPadding.toString(), 250)
-        list.addSingleRow(Component.translatable("text.autoconfig.nichat.option.chatLog.logChatLogInputPadding"), logChatLogInputPaddingBox!!, 250)
+        logChatLogInputPaddingBox = createTextField(Component.translatable("nichat.config.option.chatLog.logChatLogInputPadding"), config.logChatLogInputPadding.toString(), 250)
+        list.addSingleRow(Component.translatable("nichat.config.option.chatLog.logChatLogInputPadding"), logChatLogInputPaddingBox!!, 250)
     }
 
     private fun createTextField(label: Component, value: String, width: Int = 150): EditBox {
