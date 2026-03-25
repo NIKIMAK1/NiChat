@@ -73,6 +73,12 @@ tasks.withType(JavaCompile).configureEach {
     it.options.release = 25
 }
 
+tasks.withType(Jar).configureEach {
+    if (name == "sourcesJar") {
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    }
+}
+
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
     kotlinOptions {
         jvmTarget = "25"
