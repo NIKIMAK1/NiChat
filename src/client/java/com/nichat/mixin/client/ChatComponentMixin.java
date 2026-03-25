@@ -3,9 +3,10 @@ package com.nichat.mixin.client;
 import com.nichat.NiChatClient;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.ChatComponent;
-import net.minecraft.client.GuiMessageTag;
+import net.minecraft.client.gui.components.ChatComponent.DisplayMode;
+import net.minecraft.client.multiplayer.chat.GuiMessageTag;
 import net.minecraft.network.chat.MessageSignature;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.Nullable;
@@ -22,7 +23,7 @@ public class ChatComponentMixin {
     @Shadow @Final private Minecraft minecraft;
 
     @Inject(
-            method = "addMessage(Lnet/minecraft/network/chat/Component;Lnet/minecraft/network/chat/MessageSignature;Lnet/minecraft/client/GuiMessageTag;)V",
+            method = "addPlayerMessage(Lnet/minecraft/network/chat/Component;Lnet/minecraft/network/chat/MessageSignature;Lnet/minecraft/client/multiplayer/chat/GuiMessageTag;)V",
             at = @At("HEAD"),
             cancellable = true
     )
@@ -38,32 +39,40 @@ public class ChatComponentMixin {
     }
 
     @Inject(
-            method = "addMessage(Lnet/minecraft/network/chat/Component;)V",
+            method = "addClientSystemMessage(Lnet/minecraft/network/chat/Component;)V",
             at = @At("HEAD"),
             cancellable = true
     )
-    private void onAddMessage(Component message, CallbackInfo ci) {
+    private void onAddClientSystemMessage(Component message, CallbackInfo ci) {
         NiChatClient.processNewMessage(message, NiChatClient.getSYSTEM_PROFILE());
         ci.cancel();
     }
 
-    // ИСПРАВЛЕННЫЙ МЕТОД RENDER
     @Inject(
-            method = "render",
+            method = "addServerSystemMessage(Lnet/minecraft/network/chat/Component;)V",
+            at = @At("HEAD"),
+            cancellable = true
+    )
+    private void onAddServerSystemMessage(Component message, CallbackInfo ci) {
+        NiChatClient.processNewMessage(message, NiChatClient.getSYSTEM_PROFILE());
+        ci.cancel();
+    }
+
+    @Inject(
+            method = "extractRenderState",
             at = @At("HEAD"),
             cancellable = true
     )
     private void onRender(
-            GuiGraphics context,
+            GuiGraphicsExtractor context,
             Font font,
             int currentTick,
             int mouseX,
             int mouseY,
+            DisplayMode displayMode,
             boolean focused,
-            boolean unknown,
             CallbackInfo ci
     ) {
-
         if (this.minecraft.screen != null) {
             ci.cancel();
             return;

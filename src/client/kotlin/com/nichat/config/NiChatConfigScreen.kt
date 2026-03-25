@@ -1,7 +1,7 @@
 package com.nichat.config
 
 import net.minecraft.client.Minecraft
-import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.components.AbstractWidget
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.components.ContainerObjectSelectionList
@@ -95,10 +95,10 @@ class NiChatConfigScreen(
         )
     }
 
-    override fun render(guiGraphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
-        renderMenuBackground(guiGraphics)
-        super.render(guiGraphics, mouseX, mouseY, partialTick)
-        guiGraphics.drawCenteredString(this.font, this.title, this.width / 2, 10, 0xFFFFFF)
+    override fun extractRenderState(guiGraphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, partialTick: Float) {
+        extractMenuBackground(guiGraphics)
+        super.extractRenderState(guiGraphics, mouseX, mouseY, partialTick)
+        guiGraphics.centeredText(this.font, this.title, this.width / 2, 10, 0xFFFFFF)
     }
 
     override fun onClose() {
@@ -400,7 +400,7 @@ class NiChatConfigScreen(
 
         private val widgets = listOfNotNull(left.widget, right?.widget)
 
-        override fun renderContent(guiGraphics: GuiGraphics, mouseX: Int, mouseY: Int, hovered: Boolean, partialTick: Float) {
+        override fun extractContent(guiGraphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, hovered: Boolean, partialTick: Float) {
             renderItem(guiGraphics, left, if (right == null) getContentXMiddle() - (left.width + 14) / 2 else getContentX() + 6, getContentY(), mouseX, mouseY, partialTick)
 
             if (right != null) {
@@ -413,7 +413,7 @@ class NiChatConfigScreen(
         override fun narratables(): List<NarratableEntry> = widgets
 
         private fun renderItem(
-            guiGraphics: GuiGraphics,
+            guiGraphics: GuiGraphicsExtractor,
             item: EntryItem,
             x: Int,
             y: Int,
@@ -434,7 +434,7 @@ class NiChatConfigScreen(
 
             item.widget.setX(x + 7)
             item.widget.setY(y + 18)
-            item.widget.render(guiGraphics, mouseX, mouseY, partialTick)
+            item.widget.extractRenderState(guiGraphics, mouseX, mouseY, partialTick)
         }
     }
 }

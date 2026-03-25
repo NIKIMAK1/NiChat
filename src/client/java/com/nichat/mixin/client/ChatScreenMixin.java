@@ -2,19 +2,20 @@ package com.nichat.mixin.client;
 
 import com.mojang.authlib.GameProfile;
 import com.nichat.DisplayMessage;
+import com.nichat.MessageBlock;
+import com.nichat.MessageLayout;
+import com.nichat.MessageLayoutCache;
 import com.nichat.NiChatClient;
 import com.nichat.config.NiChatConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.TextAlignment;
 import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.client.gui.components.PlayerFaceRenderer;
 import net.minecraft.client.gui.components.CommandSuggestions;
 import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
-import net.minecraft.client.multiplayer.PlayerInfo;
-import net.minecraft.client.resources.DefaultPlayerSkin;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
@@ -30,7 +31,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.List;
-import java.util.UUID;
 
 @Mixin(ChatScreen.class)
 public abstract class ChatScreenMixin extends Screen {
@@ -40,6 +40,7 @@ public abstract class ChatScreenMixin extends Screen {
 
     @Unique private double scrollOffset = 0.0;
     @Unique private double totalContentHeight = 0.0;
+    @Unique private @Nullable Style nichat_hoveredStyle = null;
     @Unique private final NiChatConfig.ChatLogSettings nichat_config = NiChatClient.getConfig().getChatLog();
     @Unique private final Minecraft nichat_mc = Minecraft.getInstance();
 
@@ -52,8 +53,8 @@ public abstract class ChatScreenMixin extends Screen {
         this.scrollOffset = 0.0;
     }
 
-    @Inject(method = "render", at = @At("HEAD"))
-    private void onRender(GuiGraphics context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
+    @Inject(method = "extractRenderState", at = @At("HEAD"))
+    private void onRender(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
         nichat_renderCustomChatHistory(context, mouseX, mouseY);
     }
 
@@ -80,12 +81,9 @@ public abstract class ChatScreenMixin extends Screen {
 
     @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)
     private void onMouseClicked(MouseButtonEvent click, boolean button, CallbackInfoReturnable<Boolean> cir) {
-        double mouseX = click.x();
-        double mouseY = click.y();
-
-        Style style = nichat_getStyleAt(mouseX, mouseY);
-        if (style != null && this.nichat_handleStyleClick(style)) {
+        if (this.nichat_hoveredStyle != null && this.nichat_handleStyleClick(this.nichat_hoveredStyle)) {
             cir.setReturnValue(true);
+            return;
         }
     }
 
@@ -99,7 +97,7 @@ public abstract class ChatScreenMixin extends Screen {
     }
 
     @Unique
-    private void nichat_renderCustomChatHistory(GuiGraphics context, int mouseX, int mouseY) {
+    private void nichat_renderCustomChatHistory(GuiGraphicsExtractor context, int mouseX, int mouseY) {
         nichat_recalculateTotalContentHeight();
 
         Font font = this.nichat_mc.font;
@@ -110,26 +108,30 @@ public abstract class ChatScreenMixin extends Screen {
         int logBottomY = this.input.getY() - this.nichat_config.getLogChatLogInputPadding();
         int logTopY = 0;
 
+        this.nichat_hoveredStyle = null;
         context.enableScissor(0, logTopY, screenWidth, logBottomY);
 
         int cursorY = (int)(logBottomY + this.scrollOffset);
+        var textCollector = context.textRenderer(
+                GuiGraphicsExtractor.HoveredTextEffects.TOOLTIP_AND_CURSOR,
+                style -> this.nichat_hoveredStyle = style
+        );
 
         List<DisplayMessage> messages = NiChatClient.getAllMessages();
-        for (int i = messages.size() - 1; i >= 0; i--) {
-            DisplayMessage messageToRender = messages.get(i);
-            GameProfile senderProfile = messageToRender.getSenderProfile();
-            boolean drawHead = !senderProfile.equals(NiChatClient.getSYSTEM_PROFILE());
-            List<FormattedCharSequence> lines = font.split(messageToRender.getContent(), maxTextWidth);
-
-            int widestLine = lines.stream().mapToInt(font::width).max().orElse(0);
-            int headSpace = drawHead ? (this.nichat_config.getLogHeadSize() + this.nichat_config.getLogHeadTextSpacing()) : 0;
-            int textBlockHeight = lines.size() * font.lineHeight;
-            int contentHeight = Math.max(textBlockHeight, (drawHead ? this.nichat_config.getLogHeadSize() : 0));
-            int totalBlockHeight = contentHeight + this.nichat_config.getLogPadding() * 2;
-            int totalBlockWidth = headSpace + widestLine + this.nichat_config.getLogPadding() * 2;
+        List<MessageBlock> blocks = MessageLayoutCache.getBlocks(
+                font,
+                messages,
+                maxTextWidth,
+                this.nichat_config.getLogHeadSize(),
+                this.nichat_config.getLogHeadTextSpacing(),
+                this.nichat_config.getLogPadding()
+        );
+        for (int i = blocks.size() - 1; i >= 0; i--) {
+            MessageBlock block = blocks.get(i);
+            GameProfile senderProfile = block.getMessage().getSenderProfile();
 
             int blockBottomY = cursorY;
-            int blockTopY = blockBottomY - totalBlockHeight;
+            int blockTopY = blockBottomY - block.getBoxHeight();
 
             if (blockTopY > logBottomY || blockBottomY < logTopY) {
                 cursorY = blockTopY - this.nichat_config.getLogPaddingBetweenMessages();
@@ -138,32 +140,24 @@ public abstract class ChatScreenMixin extends Screen {
 
             int blockLeftX = 2;
             int backgroundColor = this.nichat_mc.options.getBackgroundColor(this.nichat_config.getLogBackgroundOpacity());
-            context.fill(blockLeftX, blockTopY, blockLeftX + totalBlockWidth, blockBottomY, backgroundColor);
+            context.fill(blockLeftX, blockTopY, blockLeftX + block.getBoxWidth(), blockBottomY, backgroundColor);
 
             int contentTopY = blockTopY + this.nichat_config.getLogPadding();
             int textLeftX;
 
-            if (drawHead) {
-                UUID senderId = senderProfile.id();
+            if (block.getDrawHead()) {
                 int headX = blockLeftX + this.nichat_config.getLogPadding();
-                int headY = contentTopY + (contentHeight - this.nichat_config.getLogHeadSize()) / 2;
-                PlayerInfo playerListEntry = this.nichat_mc.getConnection() != null
-                        ? this.nichat_mc.getConnection().getPlayerInfo(senderId)
-                        : null;
-                var skinTextures = playerListEntry != null
-                        ? playerListEntry.getSkin()
-                        : DefaultPlayerSkin.get(senderId);
-
-                PlayerFaceRenderer.draw(context, skinTextures, headX, headY, this.nichat_config.getLogHeadSize());
+                int headY = contentTopY + (block.getContentHeight() - this.nichat_config.getLogHeadSize()) / 2;
+                NiChatClient.drawPlayerHead(context, this.nichat_mc, senderProfile, headX, headY, this.nichat_config.getLogHeadSize(), 1.0f);
                 textLeftX = headX + this.nichat_config.getLogHeadSize() + this.nichat_config.getLogHeadTextSpacing();
             } else {
-                textLeftX = blockLeftX + (totalBlockWidth - widestLine) / 2;
+                textLeftX = blockLeftX + (block.getBoxWidth() - block.getTextWidth()) / 2;
             }
 
-            int textOffsetY = (contentHeight - textBlockHeight) / 2;
+            int textOffsetY = (block.getContentHeight() - block.getLines().size() * font.lineHeight) / 2;
             int lineY = contentTopY + textOffsetY;
-            for (FormattedCharSequence line : lines) {
-                context.drawString(font, line, textLeftX, lineY, 0xFFFFFFFF);
+            for (FormattedCharSequence line : block.getLines()) {
+                textCollector.accept(TextAlignment.LEFT, textLeftX, lineY, line);
                 lineY += font.lineHeight;
             }
 
@@ -171,11 +165,6 @@ public abstract class ChatScreenMixin extends Screen {
         }
 
         context.disableScissor();
-
-        Style style = nichat_getStyleAt(mouseX, mouseY);
-        if (style != null && style.getHoverEvent() != null) {
-            context.renderComponentHoverEffect(font, style, mouseX, mouseY);
-        }
     }
 
     @Unique
@@ -183,88 +172,18 @@ public abstract class ChatScreenMixin extends Screen {
         if (this.width == 0) return;
         Font font = this.nichat_mc.font;
         int maxTextWidth = (int)(this.width * this.nichat_config.getLogWidthScale());
-        double calculatedHeight = 0.0;
-
         List<DisplayMessage> messages = NiChatClient.getAllMessages();
-        if (!messages.isEmpty()) {
-            for (DisplayMessage msg : messages) {
-                List<FormattedCharSequence> lines = font.split(msg.getContent(), maxTextWidth);
-                int textBlockHeight = lines.size() * font.lineHeight;
-                boolean drawHead = !msg.getSenderProfile().equals(NiChatClient.getSYSTEM_PROFILE());
-                int contentHeight = Math.max(textBlockHeight, (drawHead ? this.nichat_config.getLogHeadSize() : 0));
-                calculatedHeight += contentHeight + this.nichat_config.getLogPadding() * 2 + this.nichat_config.getLogPaddingBetweenMessages();
-            }
-            calculatedHeight -= this.nichat_config.getLogPaddingBetweenMessages();
-        }
-        this.totalContentHeight = calculatedHeight;
-    }
-
-    @Unique
-    private @Nullable Style nichat_getStyleAt(double mouseX, double mouseY) {
-        if (this.input == null) return null;
-        if (mouseY < 20 || mouseY > this.input.getY() - this.nichat_config.getLogChatLogInputPadding()) return null;
-
-        Font font = this.nichat_mc.font;
-        int maxTextWidth = (int)(this.width * this.nichat_config.getLogWidthScale());
-        int logBottomY = this.input.getY() - this.nichat_config.getLogChatLogInputPadding();
-        int cursorY = (int)(logBottomY + this.scrollOffset);
-
-        List<DisplayMessage> messages = NiChatClient.getAllMessages();
-        for (int i = messages.size() - 1; i >= 0; i--) {
-            DisplayMessage messageToRender = messages.get(i);
-            boolean drawHead = !messageToRender.getSenderProfile().equals(NiChatClient.getSYSTEM_PROFILE());
-            List<FormattedCharSequence> lines = font.split(messageToRender.getContent(), maxTextWidth);
-
-            int widestLine = lines.stream().mapToInt(font::width).max().orElse(0);
-            int headSpace = drawHead ? (this.nichat_config.getLogHeadSize() + this.nichat_config.getLogHeadTextSpacing()) : 0;
-            int textBlockHeight = lines.size() * font.lineHeight;
-            int contentHeight = Math.max(textBlockHeight, (drawHead ? this.nichat_config.getLogHeadSize() : 0));
-            int totalBlockHeight = contentHeight + this.nichat_config.getLogPadding() * 2;
-            int totalBlockWidth = headSpace + widestLine + this.nichat_config.getLogPadding() * 2;
-
-            int blockBottomY = cursorY;
-            int blockTopY = blockBottomY - totalBlockHeight;
-
-            if (mouseY >= blockTopY && mouseY < blockBottomY) {
-                int blockLeftX = 2;
-                int textBlockLeftX;
-
-                if (drawHead) {
-                    textBlockLeftX = blockLeftX + this.nichat_config.getLogPadding() + headSpace;
-                } else {
-                    textBlockLeftX = blockLeftX + (totalBlockWidth - widestLine) / 2;
-                }
-
-                if (mouseX >= textBlockLeftX && mouseX < textBlockLeftX + widestLine) {
-                    int contentTopY = blockTopY + this.nichat_config.getLogPadding();
-                    int textOffsetY = (contentHeight - textBlockHeight) / 2;
-                    int lineIndex = (int) ((mouseY - (contentTopY + textOffsetY)) / font.lineHeight);
-
-                    if (lineIndex >= 0 && lineIndex < lines.size()) {
-                        FormattedCharSequence line = lines.get(lineIndex);
-                        int relativeMouseX = (int) (mouseX - textBlockLeftX);
-
-                        final Style[] foundStyle = {null};
-                        final int[] currentX = {0};
-
-                        line.accept((index, s, codePoint) -> {
-                            if (foundStyle[0] != null) return false;
-
-                            int charWidth = font.width(FormattedCharSequence.forward(String.valueOf((char)codePoint), Style.EMPTY));
-                            if (currentX[0] <= relativeMouseX && relativeMouseX < currentX[0] + charWidth) {
-                                foundStyle[0] = s;
-                                return false;
-                            }
-                            currentX[0] += charWidth;
-                            return true;
-                        });
-
-                        return foundStyle[0];
-                    }
-                }
-            }
-            cursorY = blockTopY - this.nichat_config.getLogPaddingBetweenMessages();
-        }
-        return null;
+        List<MessageBlock> blocks = MessageLayoutCache.getBlocks(
+                font,
+                messages,
+                maxTextWidth,
+                this.nichat_config.getLogHeadSize(),
+                this.nichat_config.getLogHeadTextSpacing(),
+                this.nichat_config.getLogPadding()
+        );
+        this.totalContentHeight = MessageLayout.calculateTotalHeight(
+                blocks,
+                this.nichat_config.getLogPaddingBetweenMessages()
+        );
     }
 }

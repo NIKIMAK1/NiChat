@@ -7,9 +7,9 @@ import com.nichat.config.NiChatConfigManager
 import net.fabricmc.api.ClientModInitializer
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents
 import net.minecraft.client.Minecraft
-import net.minecraft.client.gui.GuiGraphics
-import net.minecraft.client.gui.components.PlayerFaceRenderer
+import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.resources.DefaultPlayerSkin
+import net.minecraft.client.renderer.RenderPipelines
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.Style
 import net.minecraft.network.chat.TextColor
@@ -19,7 +19,6 @@ import org.slf4j.LoggerFactory
 
 import java.util.*
 import java.util.concurrent.TimeUnit
-import kotlin.math.max
 import kotlin.math.roundToInt
 
 class NiChatClient : ClientModInitializer {
@@ -35,6 +34,12 @@ class NiChatClient : ClientModInitializer {
             UUID.fromString("00000000-0000-0000-0000-000000000000"),
             "System"
         )
+        private const val SKIN_TEXTURE_SIZE = 64f
+        private const val FACE_U = 8f
+        private const val FACE_V = 8f
+        private const val FACE_OVERLAY_U = 40f
+        private const val FACE_OVERLAY_V = 8f
+        private const val FACE_REGION_SIZE = 8
 
         @JvmStatic
         fun processNewMessage(content: Component, profile: GameProfile) {
@@ -46,7 +51,7 @@ class NiChatClient : ClientModInitializer {
             synchronized(allMessages) {
                 allMessages.add(newMessage)
                 if (allMessages.size > config.chatLog.maxLogSize) {
-                    allMessages.removeFirst()
+                    MessageLayoutCache.invalidateMessage(allMessages.removeFirst())
                 }
             }
             logger.debug("Message added: ${finalContent.string}")
@@ -94,7 +99,7 @@ class NiChatClient : ClientModInitializer {
         }
 
         @JvmStatic
-        fun renderCustomHud(context: GuiGraphics, client: Minecraft) {
+        fun renderCustomHud(context: GuiGraphicsExtractor, client: Minecraft) {
             val hudConfig = config.hud
             val durationNanos = TimeUnit.SECONDS.toNanos(hudConfig.hudMessageDuration)
             val fadeInDurationNanos = TimeUnit.MILLISECONDS.toNanos(hudConfig.hudFadeInDurationMs.coerceAtLeast(0L))
@@ -120,26 +125,14 @@ class NiChatClient : ClientModInitializer {
             val headTextSpacing = hudConfig.hudHeadTextSpacing
             val messagePadding = hudConfig.hudPaddingBetweenMessages
 
-            data class MessageBox(
-                val message: DisplayMessage,
-                val lines: List<FormattedCharSequence>,
-                val boxWidth: Int,
-                val boxHeight: Int,
-                val textWidth: Int,
-                val drawHead: Boolean
+            val messageBoxes = MessageLayoutCache.getBlocks(
+                font = font,
+                messages = messagesToRender,
+                maxTextWidth = maxTextWidth,
+                headSize = headSize,
+                headTextSpacing = headTextSpacing,
+                padding = padding
             )
-
-            val messageBoxes = messagesToRender.map { message ->
-                val drawHead = message.senderProfile != SYSTEM_PROFILE
-                val lines = font.split(message.content, maxTextWidth)
-                val textWidth = lines.maxOfOrNull { font.width(it) } ?: 0
-                val headSpace = if (drawHead) headSize + headTextSpacing else 0
-                val contentHeight = max(font.lineHeight * lines.size, if (drawHead) headSize else 0)
-                val boxWidth = headSpace + textWidth + padding * 2
-                val boxHeight = contentHeight + padding * 2
-
-                MessageBox(message, lines, boxWidth, boxHeight, textWidth, drawHead)
-            }
 
             var cursorY = screenHeight - hudConfig.hudVerticalOffset
 
@@ -176,19 +169,17 @@ class NiChatClient : ClientModInitializer {
 
                 if (box.drawHead) {
                     val contentLeftX = posX + padding
-                    val profile = box.message.senderProfile
-                    val playerListEntry = client.connection?.getPlayerInfo(profile.id)
-                    val skinTextures = playerListEntry?.skin ?: DefaultPlayerSkin.get(profile.id)
                     val headY = contentTopY + (contentHeight - headSize) / 2
-                    PlayerFaceRenderer.draw(
+                    drawPlayerHead(
                         context,
-                        skinTextures,
+                        client,
+                        box.message.senderProfile,
                         contentLeftX,
                         headY,
                         headSize,
-                        scaleColorAlpha(0xFFFFFFFF.toInt(), animationProgress)
+                        animationProgress
                     )
-                    textLeftX = contentLeftX + headSize + headTextSpacing
+                    textLeftX = posX + padding + headSize + headTextSpacing
                 } else {
                     textLeftX = posX + (box.boxWidth - box.textWidth) / 2
                 }
@@ -198,7 +189,7 @@ class NiChatClient : ClientModInitializer {
                 val textColor = scaleColorAlpha(0xFFFFFFFF.toInt(), animationProgress)
 
                 for (line in box.lines) {
-                    context.drawString(font, line, textLeftX, textTopY, textColor)
+                    context.text(font, line, textLeftX, textTopY, textColor)
                     textTopY += font.lineHeight
                 }
 
@@ -238,6 +229,52 @@ class NiChatClient : ClientModInitializer {
         private fun scaleColorAlpha(color: Int, alphaMultiplier: Float): Int {
             val scaledAlpha = (((color ushr 24) and 0xFF) * alphaMultiplier.coerceIn(0f, 1f)).roundToInt()
             return (color and 0x00FFFFFF) or (scaledAlpha.coerceIn(0, 255) shl 24)
+        }
+
+        @JvmStatic
+        fun drawPlayerHead(
+            context: GuiGraphicsExtractor,
+            client: Minecraft,
+            profile: GameProfile,
+            x: Int,
+            y: Int,
+            size: Int,
+            alpha: Float
+        ) {
+            val playerSkin = client.connection?.getPlayerInfo(profile.id)?.skin ?: DefaultPlayerSkin.get(profile)
+            val texture = playerSkin.body().texturePath()
+            val tint = scaleColorAlpha(0xFFFFFFFF.toInt(), alpha)
+
+            context.blit(
+                RenderPipelines.GUI_TEXTURED,
+                texture,
+                x,
+                y,
+                FACE_U,
+                FACE_V,
+                size,
+                size,
+                FACE_REGION_SIZE,
+                FACE_REGION_SIZE,
+                SKIN_TEXTURE_SIZE.toInt(),
+                SKIN_TEXTURE_SIZE.toInt(),
+                tint
+            )
+            context.blit(
+                RenderPipelines.GUI_TEXTURED,
+                texture,
+                x,
+                y,
+                FACE_OVERLAY_U,
+                FACE_OVERLAY_V,
+                size,
+                size,
+                FACE_REGION_SIZE,
+                FACE_REGION_SIZE,
+                SKIN_TEXTURE_SIZE.toInt(),
+                SKIN_TEXTURE_SIZE.toInt(),
+                tint
+            )
         }
     }
 
