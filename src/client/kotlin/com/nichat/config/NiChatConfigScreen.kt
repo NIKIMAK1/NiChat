@@ -107,7 +107,7 @@ class NiChatConfigScreen(
 
     private fun closeWithoutSaving() {
         copyConfig(NiChatConfigManager.config, initialConfig)
-        Minecraft.getInstance().setScreen(parent)
+        Minecraft.getInstance().setScreenAndShow(parent ?: net.minecraft.client.gui.screens.TitleScreen())
     }
 
     private fun categoryButton(x: Int, y: Int, width: Int, category: Category, label: Component): Button {
@@ -295,7 +295,7 @@ class NiChatConfigScreen(
     private fun saveAndClose() {
         applyCurrentCategoryInputs()
         NiChatConfigManager.save()
-        Minecraft.getInstance().setScreen(parent)
+        Minecraft.getInstance().setScreenAndShow(parent ?: net.minecraft.client.gui.screens.TitleScreen())
     }
 
     private fun applyCurrentCategoryInputs() {

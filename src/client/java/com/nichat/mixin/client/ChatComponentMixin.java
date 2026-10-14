@@ -73,7 +73,7 @@ public class ChatComponentMixin {
             boolean focused,
             CallbackInfo ci
     ) {
-        if (this.minecraft.screen != null) {
+        if (this.minecraft.gui.screen() != null) {
             ci.cancel();
             return;
         }

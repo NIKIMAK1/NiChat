@@ -16,6 +16,14 @@ repositories {
     maven {
         name = "Nucleoid"
         url = "https://maven.nucleoid.xyz/"
+
+    maven {
+        name = "Modrinth"
+        url = "https://api.modrinth.com/maven"
+        content {
+            includeGroup "maven.modrinth"
+            }
+        }
     }
     // Add repositories to retrieve artifacts from in here.
     // You should only use this when depending on other mods because
@@ -57,8 +65,7 @@ dependencies {
     implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
     implementation "net.fabricmc:fabric-language-kotlin:${project.fabric_kotlin_version}"
 
-    compileOnly("com.terraformersmc:modmenu:${project.modmenu_version}")
-    runtimeOnly("com.terraformersmc:modmenu:${project.modmenu_version}")
+    implementation "maven.modrinth:modmenu:${project.modmenu_version}"
 }
 
 processResources {
