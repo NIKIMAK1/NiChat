@@ -48,6 +48,7 @@ object NiChatConfigManager {
         }
     }
 
+    @Suppress("USELESS_ELVIS")
     private fun copyInto(target: NiChatConfig, source: NiChatConfig) {
         target.general.nicknameColor = source.general.nicknameColor
         target.general.randomNicknameColor = source.general.randomNicknameColor
@@ -75,5 +76,12 @@ object NiChatConfigManager {
         target.chatLog.logHeadTextSpacing = source.chatLog.logHeadTextSpacing
         target.chatLog.logPaddingBetweenMessages = source.chatLog.logPaddingBetweenMessages
         target.chatLog.logChatLogInputPadding = source.chatLog.logChatLogInputPadding
+        target.chatLog.logOpenAnimationMs = source.chatLog.logOpenAnimationMs
+        target.chatLog.logFadeInDurationMs = source.chatLog.logFadeInDurationMs
+
+        val translation = source.translation ?: NiChatConfig.TranslationSettings()
+        target.translation.enabled = translation.enabled
+        target.translation.targetLanguage = translation.targetLanguage ?: ""
+        target.translation.translateOwnMessages = translation.translateOwnMessages
     }
 }

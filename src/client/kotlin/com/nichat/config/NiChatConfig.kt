@@ -10,6 +10,7 @@ class NiChatConfig {
     var general: GeneralSettings = GeneralSettings()
     var hud: HudSettings = HudSettings()
     var chatLog: ChatLogSettings = ChatLogSettings()
+    var translation: TranslationSettings = TranslationSettings()
 
     class GeneralSettings {
         var nicknameColor: String = "14b414"
@@ -42,5 +43,13 @@ class NiChatConfig {
         var logHeadTextSpacing: Int = 5
         var logPaddingBetweenMessages: Int = 4
         var logChatLogInputPadding: Int = 5
+        var logOpenAnimationMs: Long = 180L
+        var logFadeInDurationMs: Long = 220L
+    }
+
+    class TranslationSettings {
+        var enabled: Boolean = false
+        var targetLanguage: String = ""
+        var translateOwnMessages: Boolean = false
     }
 }

@@ -54,7 +54,6 @@ sourceSets {
     client {
         java.srcDirs += ["src/client/java"]
         kotlin.srcDirs += ["src/client/kotlin"]
-        resources.srcDirs += ["src/client/resources"]
     }
 }
 

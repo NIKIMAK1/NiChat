@@ -1,11 +1,14 @@
 package com.nichat.mixin.client;
 
+import com.nichat.ChatScreenAnimation;
 import com.nichat.NiChatClient;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.ChatComponent;
 import net.minecraft.client.gui.components.ChatComponent.DisplayMode;
+import net.minecraft.client.gui.screens.ChatScreen;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.multiplayer.chat.GuiMessageTag;
 import net.minecraft.network.chat.MessageSignature;
 import net.minecraft.network.chat.Component;
@@ -73,13 +76,17 @@ public class ChatComponentMixin {
             boolean focused,
             CallbackInfo ci
     ) {
-        if (this.minecraft.gui.screen() != null) {
-            ci.cancel();
+        ci.cancel();
+        if (displayMode != DisplayMode.BACKGROUND) return;
+
+        Screen screen = this.minecraft.gui.screen();
+        if (screen instanceof ChatScreen) {
+            NiChatClient.renderCustomHud(context, this.minecraft, 1.0f - ChatScreenAnimation.getOpenProgress());
             return;
         }
+        if (screen != null) return;
 
-        NiChatClient.renderCustomHud(context, this.minecraft);
-
-        ci.cancel();
+        float closingVisibility = ChatScreenAnimation.renderClosing(context, this.minecraft);
+        NiChatClient.renderCustomHud(context, this.minecraft, 1.0f - closingVisibility);
     }
 }

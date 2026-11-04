@@ -1,6 +1,8 @@
 package com.nichat.mixin.client;
 
-import com.mojang.authlib.GameProfile;
+import com.nichat.Animation;
+import com.nichat.ChatHistoryRenderer;
+import com.nichat.ChatScreenAnimation;
 import com.nichat.DisplayMessage;
 import com.nichat.MessageBlock;
 import com.nichat.MessageLayout;
@@ -10,7 +12,6 @@ import com.nichat.config.NiChatConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.TextAlignment;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.CommandSuggestions;
 import net.minecraft.client.gui.screens.ChatScreen;
@@ -18,7 +19,6 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
-import net.minecraft.util.FormattedCharSequence;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -27,6 +27,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
@@ -43,6 +44,11 @@ public abstract class ChatScreenMixin extends Screen {
     @Unique private @Nullable Style nichat_hoveredStyle = null;
     @Unique private final NiChatConfig.ChatLogSettings nichat_config = NiChatClient.getConfig().getChatLog();
     @Unique private final Minecraft nichat_mc = Minecraft.getInstance();
+    @Unique private long nichat_openTimeNano = 0L;
+    @Unique private float nichat_openStartVisibility = 0.0f;
+    @Unique private float nichat_openVisibility = 1.0f;
+    @Unique private float nichat_openProgress = 1.0f;
+    @Unique private boolean nichat_messageSent = false;
 
     protected ChatScreenMixin(Component title) {
         super(title);
@@ -51,11 +57,64 @@ public abstract class ChatScreenMixin extends Screen {
     @Inject(method = "init", at = @At("TAIL"))
     private void onInit(CallbackInfo ci) {
         this.scrollOffset = 0.0;
+        if (this.nichat_openTimeNano == 0L) {
+            this.nichat_openTimeNano = System.nanoTime();
+            this.nichat_openStartVisibility = ChatScreenAnimation.takeCloseVisibility();
+            this.nichat_openVisibility = this.nichat_openStartVisibility;
+            this.nichat_openProgress = Animation.smoothStep(this.nichat_openStartVisibility);
+            ChatScreenAnimation.setOpenProgress(this.nichat_openProgress);
+        }
+    }
+
+    @Inject(method = "handleChatInput", at = @At("HEAD"))
+    private void onHandleChatInput(String message, boolean addToRecentChat, CallbackInfo ci) {
+        this.nichat_messageSent = true;
+    }
+
+    @Inject(method = "removed", at = @At("HEAD"))
+    private void onRemoved(CallbackInfo ci) {
+        if (this.input == null) return;
+        ChatScreenAnimation.startClosing(
+                this.nichat_openVisibility,
+                this.input.getY() - this.nichat_config.getLogChatLogInputPadding(),
+                this.scrollOffset,
+                this.nichat_messageSent ? "" : this.input.getValue()
+        );
     }
 
     @Inject(method = "extractRenderState", at = @At("HEAD"))
     private void onRender(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
+        this.nichat_openVisibility = Math.min(1.0f, this.nichat_openStartVisibility + Animation.linear(
+                System.nanoTime() - this.nichat_openTimeNano,
+                this.nichat_config.getLogOpenAnimationMs()
+        ));
+        this.nichat_openProgress = Animation.smoothStep(this.nichat_openVisibility);
+        ChatScreenAnimation.setOpenProgress(this.nichat_openProgress);
+        ChatScreenAnimation.setFadingInput(this.input);
+        ChatScreenAnimation.setInputOpacity(this.nichat_openProgress);
+
+        context.pose().pushMatrix();
+        context.pose().translate(0.0f, ChatScreenAnimation.offsetFor(this.nichat_openProgress));
+
         nichat_renderCustomChatHistory(context, mouseX, mouseY);
+    }
+
+    @Inject(method = "extractRenderState", at = @At("RETURN"))
+    private void onRenderEnd(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
+        ChatScreenAnimation.setFadingInput(null);
+        context.pose().popMatrix();
+    }
+
+    @ModifyArg(
+            method = "extractRenderState",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;fill(IIIII)V"
+            ),
+            index = 4
+    )
+    private int nichat_fadeInputBackground(int color) {
+        return Animation.scaleColorAlpha(color, this.nichat_openProgress);
     }
 
     @Inject(method = "mouseScrolled", at = @At("HEAD"), cancellable = true)
@@ -99,72 +158,17 @@ public abstract class ChatScreenMixin extends Screen {
     @Unique
     private void nichat_renderCustomChatHistory(GuiGraphicsExtractor context, int mouseX, int mouseY) {
         nichat_recalculateTotalContentHeight();
-
-        Font font = this.nichat_mc.font;
-        int screenWidth = context.guiWidth();
-        int maxTextWidth = (int)(screenWidth * this.nichat_config.getLogWidthScale());
         if (this.input == null) return;
 
-        int logBottomY = this.input.getY() - this.nichat_config.getLogChatLogInputPadding();
-        int logTopY = 0;
-
         this.nichat_hoveredStyle = null;
-        context.enableScissor(0, logTopY, screenWidth, logBottomY);
-
-        int cursorY = (int)(logBottomY + this.scrollOffset);
-        var textCollector = context.textRenderer(
-                GuiGraphicsExtractor.HoveredTextEffects.TOOLTIP_AND_CURSOR,
+        ChatHistoryRenderer.render(
+                context,
+                this.nichat_mc,
+                this.input.getY() - this.nichat_config.getLogChatLogInputPadding(),
+                this.scrollOffset,
+                this.nichat_openProgress,
                 style -> this.nichat_hoveredStyle = style
         );
-
-        List<DisplayMessage> messages = NiChatClient.getAllMessages();
-        List<MessageBlock> blocks = MessageLayoutCache.getBlocks(
-                font,
-                messages,
-                maxTextWidth,
-                this.nichat_config.getLogHeadSize(),
-                this.nichat_config.getLogHeadTextSpacing(),
-                this.nichat_config.getLogPadding()
-        );
-        for (int i = blocks.size() - 1; i >= 0; i--) {
-            MessageBlock block = blocks.get(i);
-            GameProfile senderProfile = block.getMessage().getSenderProfile();
-
-            int blockBottomY = cursorY;
-            int blockTopY = blockBottomY - block.getBoxHeight();
-
-            if (blockTopY > logBottomY || blockBottomY < logTopY) {
-                cursorY = blockTopY - this.nichat_config.getLogPaddingBetweenMessages();
-                continue;
-            }
-
-            int blockLeftX = 2;
-            int backgroundColor = this.nichat_mc.options.getBackgroundColor(this.nichat_config.getLogBackgroundOpacity());
-            context.fill(blockLeftX, blockTopY, blockLeftX + block.getBoxWidth(), blockBottomY, backgroundColor);
-
-            int contentTopY = blockTopY + this.nichat_config.getLogPadding();
-            int textLeftX;
-
-            if (block.getDrawHead()) {
-                int headX = blockLeftX + this.nichat_config.getLogPadding();
-                int headY = contentTopY + (block.getContentHeight() - this.nichat_config.getLogHeadSize()) / 2;
-                NiChatClient.drawPlayerHead(context, this.nichat_mc, senderProfile, headX, headY, this.nichat_config.getLogHeadSize(), 1.0f);
-                textLeftX = headX + this.nichat_config.getLogHeadSize() + this.nichat_config.getLogHeadTextSpacing();
-            } else {
-                textLeftX = blockLeftX + (block.getBoxWidth() - block.getTextWidth()) / 2;
-            }
-
-            int textOffsetY = (block.getContentHeight() - block.getLines().size() * font.lineHeight) / 2;
-            int lineY = contentTopY + textOffsetY;
-            for (FormattedCharSequence line : block.getLines()) {
-                textCollector.accept(TextAlignment.LEFT, textLeftX, lineY, line);
-                lineY += font.lineHeight;
-            }
-
-            cursorY = blockTopY - this.nichat_config.getLogPaddingBetweenMessages();
-        }
-
-        context.disableScissor();
     }
 
     @Unique

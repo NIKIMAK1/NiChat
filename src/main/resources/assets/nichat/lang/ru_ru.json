@@ -36,9 +36,16 @@
   "nichat.config.option.chatLog.logHeadTextSpacing": "Отступ (между головой и текстом)",
   "nichat.config.option.chatLog.logPaddingBetweenMessages": "Отступ (между сообщениями)",
   "nichat.config.option.chatLog.logChatLogInputPadding": "Отступ (под историей)",
+  "nichat.config.option.chatLog.logOpenAnimationMs": "Анимация открытия/закрытия (мс)",
+  "nichat.config.option.chatLog.logFadeInDurationMs": "Появление сообщений (мс)",
   "nichat.config.reset": "Сбросить вкладку",
   "nichat.config.description.general": "Базовые настройки отображения имён и поведения чата.",
   "nichat.config.description.hud": "Настройка всплывающих HUD-сообщений на основном экране.",
   "nichat.config.description.chat_log": "Параметры экрана истории чата и прокрутки.",
+  "nichat.config.category.translation": "Перевод",
+  "nichat.config.option.translation.enabled": "Переводить сообщения",
+  "nichat.config.option.translation.translateOwnMessages": "Переводить свои сообщения",
+  "nichat.config.option.translation.targetLanguage": "Язык перевода (пусто = язык игры)",
+  "nichat.config.description.translation": "Автоматический перевод сообщений чата. Текст сообщений отправляется в Google Переводчик.",
   "modmenu.descriptionTranslation.nichat": "Мод с удобной историей чата и всплывающими сообщениями поверх игрового интерфейса."
 }

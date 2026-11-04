@@ -18,7 +18,8 @@ class NiChatConfigScreen(
     private enum class Category {
         GENERAL,
         HUD,
-        CHAT_LOG
+        CHAT_LOG,
+        TRANSLATION
     }
 
     private data class EntryItem(
@@ -57,14 +58,20 @@ class NiChatConfigScreen(
     private var logHeadTextSpacingBox: EditBox? = null
     private var logPaddingBetweenMessagesBox: EditBox? = null
     private var logChatLogInputPaddingBox: EditBox? = null
+    private var logOpenAnimationMsBox: EditBox? = null
+    private var logFadeInDurationMsBox: EditBox? = null
+
+    private var translationEnabledButton: CycleButton<Boolean>? = null
+    private var translateOwnMessagesButton: CycleButton<Boolean>? = null
+    private var translationTargetLanguageBox: EditBox? = null
 
     override fun init() {
         super.init()
 
         val tabY = 28
-        val tabWidth = 98
         val tabGap = 6
-        val tabStartX = this.width / 2 - (tabWidth * 3 + tabGap * 2) / 2
+        val tabWidth = minOf(98, (this.width - 20 - tabGap * 3) / 4)
+        val tabStartX = this.width / 2 - (tabWidth * 4 + tabGap * 3) / 2
         val listTop = tabY + 30
         val bottomY = this.height - 27
         val listBottom = bottomY - 8
@@ -72,6 +79,7 @@ class NiChatConfigScreen(
         addRenderableWidget(categoryButton(tabStartX, tabY, tabWidth, Category.GENERAL, Component.translatable("nichat.config.category.general")))
         addRenderableWidget(categoryButton(tabStartX + tabWidth + tabGap, tabY, tabWidth, Category.HUD, Component.translatable("nichat.config.category.hud")))
         addRenderableWidget(categoryButton(tabStartX + (tabWidth + tabGap) * 2, tabY, tabWidth, Category.CHAT_LOG, Component.translatable("nichat.config.category.chat_log")))
+        addRenderableWidget(categoryButton(tabStartX + (tabWidth + tabGap) * 3, tabY, tabWidth, Category.TRANSLATION, Component.translatable("nichat.config.category.translation")))
 
         configList = addRenderableWidget(ConfigList(Minecraft.getInstance(), this.width, listTop, listBottom).also { list ->
             populateEntries(list)
@@ -125,6 +133,7 @@ class NiChatConfigScreen(
             Category.GENERAL -> initGeneralFields(list)
             Category.HUD -> initHudFields(list)
             Category.CHAT_LOG -> initChatLogFields(list)
+            Category.TRANSLATION -> initTranslationFields(list)
         }
     }
 
@@ -226,8 +235,28 @@ class NiChatConfigScreen(
             EntryItem(Component.translatable("nichat.config.option.chatLog.logPaddingBetweenMessages"), logPaddingBetweenMessagesBox!!, 150)
         )
 
+        logOpenAnimationMsBox = createTextField(Component.translatable("nichat.config.option.chatLog.logOpenAnimationMs"), config.logOpenAnimationMs.toString())
+        logFadeInDurationMsBox = createTextField(Component.translatable("nichat.config.option.chatLog.logFadeInDurationMs"), config.logFadeInDurationMs.toString())
+        list.addDoubleRow(
+            EntryItem(Component.translatable("nichat.config.option.chatLog.logOpenAnimationMs"), logOpenAnimationMsBox!!, 150),
+            EntryItem(Component.translatable("nichat.config.option.chatLog.logFadeInDurationMs"), logFadeInDurationMsBox!!, 150)
+        )
+
         logChatLogInputPaddingBox = createTextField(Component.translatable("nichat.config.option.chatLog.logChatLogInputPadding"), config.logChatLogInputPadding.toString(), 250)
         list.addSingleRow(Component.translatable("nichat.config.option.chatLog.logChatLogInputPadding"), logChatLogInputPaddingBox!!, 250)
+    }
+
+    private fun initTranslationFields(list: ConfigList) {
+        val config = NiChatConfigManager.config.translation
+        translationEnabledButton = createBooleanField(Component.translatable("nichat.config.option.translation.enabled"), config.enabled, 150)
+        translateOwnMessagesButton = createBooleanField(Component.translatable("nichat.config.option.translation.translateOwnMessages"), config.translateOwnMessages, 150)
+        list.addDoubleRow(
+            EntryItem(Component.translatable("nichat.config.option.translation.enabled"), translationEnabledButton!!, 150),
+            EntryItem(Component.translatable("nichat.config.option.translation.translateOwnMessages"), translateOwnMessagesButton!!, 150)
+        )
+
+        translationTargetLanguageBox = createTextField(Component.translatable("nichat.config.option.translation.targetLanguage"), config.targetLanguage, 250)
+        list.addSingleRow(Component.translatable("nichat.config.option.translation.targetLanguage"), translationTargetLanguageBox!!, 250)
     }
 
     private fun createTextField(label: Component, value: String, width: Int = 150): EditBox {
@@ -288,6 +317,13 @@ class NiChatConfigScreen(
                 config.chatLog.logHeadTextSpacing = defaults.chatLog.logHeadTextSpacing
                 config.chatLog.logPaddingBetweenMessages = defaults.chatLog.logPaddingBetweenMessages
                 config.chatLog.logChatLogInputPadding = defaults.chatLog.logChatLogInputPadding
+                config.chatLog.logOpenAnimationMs = defaults.chatLog.logOpenAnimationMs
+                config.chatLog.logFadeInDurationMs = defaults.chatLog.logFadeInDurationMs
+            }
+            Category.TRANSLATION -> {
+                config.translation.enabled = defaults.translation.enabled
+                config.translation.targetLanguage = defaults.translation.targetLanguage
+                config.translation.translateOwnMessages = defaults.translation.translateOwnMessages
             }
         }
     }
@@ -333,6 +369,14 @@ class NiChatConfigScreen(
                 chatLog.logHeadTextSpacing = parseInt(logHeadTextSpacingBox?.value, chatLog.logHeadTextSpacing)
                 chatLog.logPaddingBetweenMessages = parseInt(logPaddingBetweenMessagesBox?.value, chatLog.logPaddingBetweenMessages)
                 chatLog.logChatLogInputPadding = parseInt(logChatLogInputPaddingBox?.value, chatLog.logChatLogInputPadding)
+                chatLog.logOpenAnimationMs = parseLong(logOpenAnimationMsBox?.value, chatLog.logOpenAnimationMs)
+                chatLog.logFadeInDurationMs = parseLong(logFadeInDurationMsBox?.value, chatLog.logFadeInDurationMs)
+            }
+            Category.TRANSLATION -> {
+                val translation = config.translation
+                translation.enabled = translationEnabledButton?.value ?: translation.enabled
+                translation.targetLanguage = translationTargetLanguageBox?.value?.trim() ?: translation.targetLanguage
+                translation.translateOwnMessages = translateOwnMessagesButton?.value ?: translation.translateOwnMessages
             }
         }
     }
@@ -369,6 +413,12 @@ class NiChatConfigScreen(
         target.chatLog.logHeadTextSpacing = source.chatLog.logHeadTextSpacing
         target.chatLog.logPaddingBetweenMessages = source.chatLog.logPaddingBetweenMessages
         target.chatLog.logChatLogInputPadding = source.chatLog.logChatLogInputPadding
+        target.chatLog.logOpenAnimationMs = source.chatLog.logOpenAnimationMs
+        target.chatLog.logFadeInDurationMs = source.chatLog.logFadeInDurationMs
+
+        target.translation.enabled = source.translation.enabled
+        target.translation.targetLanguage = source.translation.targetLanguage
+        target.translation.translateOwnMessages = source.translation.translateOwnMessages
     }
 
     private inner class ConfigList(

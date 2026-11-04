@@ -36,9 +36,16 @@
   "nichat.config.option.chatLog.logHeadTextSpacing": "Spacing (Head & Text)",
   "nichat.config.option.chatLog.logPaddingBetweenMessages": "Padding (Between Messages)",
   "nichat.config.option.chatLog.logChatLogInputPadding": "Padding (Below Log)",
+  "nichat.config.option.chatLog.logOpenAnimationMs": "Open/Close Animation (ms)",
+  "nichat.config.option.chatLog.logFadeInDurationMs": "New Message Fade In (ms)",
   "nichat.config.reset": "Reset Tab",
   "nichat.config.description.general": "Basic settings for names and chat presentation.",
   "nichat.config.description.hud": "Configure popup HUD messages shown during gameplay.",
   "nichat.config.description.chat_log": "Adjust the chat history screen and scrolling behavior.",
+  "nichat.config.category.translation": "Translation",
+  "nichat.config.option.translation.enabled": "Translate Messages",
+  "nichat.config.option.translation.translateOwnMessages": "Translate Own Messages",
+  "nichat.config.option.translation.targetLanguage": "Target Language (empty = game)",
+  "nichat.config.description.translation": "Automatically translate chat messages. Message text is sent to Google Translate.",
   "modmenu.descriptionTranslation.nichat": "A mod with improved chat history and popup messages rendered over the game HUD."
 }

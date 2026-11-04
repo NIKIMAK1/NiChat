@@ -4,6 +4,8 @@ import com.mojang.authlib.GameProfile
 import com.nichat.config.HorizontalAlignment
 import com.nichat.config.NiChatConfig
 import com.nichat.config.NiChatConfigManager
+import com.nichat.translation.MessageTranslation
+import com.nichat.translation.Translator
 import net.fabricmc.api.ClientModInitializer
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents
 import net.minecraft.client.Minecraft
@@ -19,7 +21,7 @@ import org.slf4j.LoggerFactory
 
 import java.util.*
 import java.util.concurrent.TimeUnit
-import kotlin.math.roundToInt
+import kotlin.math.floor
 
 class NiChatClient : ClientModInitializer {
 
@@ -55,6 +57,40 @@ class NiChatClient : ClientModInitializer {
                 }
             }
             logger.debug("Message added: ${finalContent.string}")
+
+            if (shouldTranslate(content, profile)) {
+                requestTranslation(newMessage)
+            }
+        }
+
+        private fun shouldTranslate(originalContent: Component, profile: GameProfile): Boolean {
+            val settings = config.translation
+            if (!settings.enabled) return false
+
+            if (!settings.translateOwnMessages && profile.id == Minecraft.getInstance().player?.uuid) {
+                return false
+            }
+
+            val contents = originalContent.contents
+            return !(contents is TranslatableContents && !contents.key.startsWith("chat.type."))
+        }
+
+        private fun requestTranslation(message: DisplayMessage) {
+            val parts = MessageTranslation.split(message.content) ?: return
+
+            Translator.translate(parts.body, config.translation.targetLanguage).thenAccept { translated ->
+                if (translated == null) return@thenAccept
+                val translatedContent = parts.build(translated, message.content)
+
+                Minecraft.getInstance().execute {
+                    synchronized(allMessages) {
+                        val index = allMessages.indexOfFirst { it === message }
+                        if (index < 0) return@execute
+                        allMessages[index] = message.copy(content = translatedContent)
+                    }
+                    MessageLayoutCache.invalidateMessage(message)
+                }
+            }
         }
 
         private fun reformatChatMessage(originalMessage: Component, profile: GameProfile): Component {
@@ -99,18 +135,32 @@ class NiChatClient : ClientModInitializer {
         }
 
         @JvmStatic
-        fun renderCustomHud(context: GuiGraphicsExtractor, client: Minecraft) {
+        fun renderCustomHud(context: GuiGraphicsExtractor, client: Minecraft, hudOpacity: Float) {
+            if (hudOpacity <= 0f) return
             val hudConfig = config.hud
             val durationNanos = TimeUnit.SECONDS.toNanos(hudConfig.hudMessageDuration)
-            val fadeInDurationNanos = TimeUnit.MILLISECONDS.toNanos(hudConfig.hudFadeInDurationMs.coerceAtLeast(0L))
             val fadeOutDurationNanos = TimeUnit.MILLISECONDS.toNanos(hudConfig.hudFadeOutDurationMs.coerceAtLeast(0L))
             val animationOffsetPx = hudConfig.hudAnimationOffsetPx.coerceAtLeast(0).toFloat()
             val currentTime = System.nanoTime()
 
-            val messagesToRender = synchronized(allMessages) {
+            val maxMessages = hudConfig.hudMaxMessages.coerceAtLeast(1)
+            val activeMessages = synchronized(allMessages) {
                 allMessages.filter { message ->
                     currentTime - message.receivedTimeNano <= durationNanos
-                }.takeLast(hudConfig.hudMaxMessages) // Берём последние N сообщений
+                }
+            }
+
+            val disappearProgressByMessage = HashMap<DisplayMessage, Float>()
+            val messagesToRender = activeMessages.filterIndexed { index, message ->
+                val newerIndex = index + maxMessages
+                val evictedAt = activeMessages.getOrNull(newerIndex)?.receivedTimeNano
+                val fadeOutStart = minOf(
+                    message.receivedTimeNano + durationNanos - fadeOutDurationNanos,
+                    evictedAt ?: Long.MAX_VALUE
+                )
+                val progress = getFadeOutProgress(currentTime - fadeOutStart, fadeOutDurationNanos)
+                disappearProgressByMessage[message] = progress
+                progress > 0f
             }
 
             if (messagesToRender.isEmpty()) return
@@ -134,17 +184,26 @@ class NiChatClient : ClientModInitializer {
                 padding = padding
             )
 
-            var cursorY = screenHeight - hudConfig.hudVerticalOffset
+            var cursorY = (screenHeight - hudConfig.hudVerticalOffset).toFloat()
+            var stackShift = 0f
 
             for (box in messageBoxes.asReversed()) {
                 val messageAge = currentTime - box.message.receivedTimeNano
-                val animationProgress = getHudAnimationProgress(
-                    messageAge,
-                    durationNanos,
-                    fadeInDurationNanos,
-                    fadeOutDurationNanos
-                )
+                val appearTime = Animation.linear(messageAge, hudConfig.hudFadeInDurationMs)
+                val appearProgress = Animation.smoothStep(appearTime)
+                val disappearProgress = disappearProgressByMessage[box.message] ?: 1f
+                val animationProgress = minOf(appearProgress, disappearProgress) * hudOpacity
+
+                stackShift += (1f - Animation.easeOutCubic(appearTime)) * (box.boxHeight + messagePadding)
+                val fadeOutOffset = (1f - disappearProgress) * animationOffsetPx
+                val exactBottomY = cursorY + stackShift - fadeOutOffset
+                val boxBottomY = floor(exactBottomY).toInt()
+                cursorY -= box.boxHeight + messagePadding
+
                 if (animationProgress <= 0f) continue
+
+                context.pose().pushMatrix()
+                context.pose().translate(0f, exactBottomY - boxBottomY)
 
                 val posX = when (hudConfig.hudHorizontalAlignment) {
                     HorizontalAlignment.LEFT -> 10
@@ -152,18 +211,14 @@ class NiChatClient : ClientModInitializer {
                     HorizontalAlignment.RIGHT -> screenWidth - box.boxWidth - 10
                 }
 
-                val boxBottomY = cursorY
                 val boxTopY = boxBottomY - box.boxHeight
-                val backgroundColor = scaleColorAlpha(
+                val backgroundColor = Animation.scaleColorAlpha(
                     client.options.getBackgroundColor(hudConfig.hudBackgroundOpacity),
                     animationProgress
                 )
-                val animatedOffsetY = ((1f - animationProgress) * animationOffsetPx).roundToInt()
-                val animatedTopY = boxTopY + animatedOffsetY
-                val animatedBottomY = boxBottomY + animatedOffsetY
-                context.fill(posX, animatedTopY, posX + box.boxWidth, animatedBottomY, backgroundColor)
+                context.fill(posX, boxTopY, posX + box.boxWidth, boxBottomY, backgroundColor)
 
-                val contentTopY = animatedTopY + padding
+                val contentTopY = boxTopY + padding
                 val contentHeight = box.boxHeight - padding * 2
                 val textLeftX: Int
 
@@ -186,49 +241,21 @@ class NiChatClient : ClientModInitializer {
 
                 val verticalCenterOffset = (contentHeight - box.lines.size * font.lineHeight) / 2
                 var textTopY = contentTopY + verticalCenterOffset
-                val textColor = scaleColorAlpha(0xFFFFFFFF.toInt(), animationProgress)
+                val textColor = Animation.scaleColorAlpha(0xFFFFFFFF.toInt(), animationProgress)
 
                 for (line in box.lines) {
                     context.text(font, line, textLeftX, textTopY, textColor)
                     textTopY += font.lineHeight
                 }
 
-                cursorY = boxTopY - messagePadding
+                context.pose().popMatrix()
             }
         }
 
-        private fun getHudAnimationProgress(
-            messageAgeNanos: Long,
-            totalDurationNanos: Long,
-            fadeInDurationNanos: Long,
-            fadeOutDurationNanos: Long
-        ): Float {
-            if (totalDurationNanos <= 0L) return 1f
-
-            val fadeInProgress = if (fadeInDurationNanos <= 0L) {
-                1f
-            } else {
-                (messageAgeNanos.toDouble() / fadeInDurationNanos.toDouble()).toFloat().coerceIn(0f, 1f)
-            }
-
-            val remainingNanos = totalDurationNanos - messageAgeNanos
-            val fadeOutProgress = if (fadeOutDurationNanos <= 0L) {
-                1f
-            } else {
-                (remainingNanos.toDouble() / fadeOutDurationNanos.toDouble()).toFloat().coerceIn(0f, 1f)
-            }
-
-            return smoothStep(minOf(fadeInProgress, fadeOutProgress))
-        }
-
-        private fun smoothStep(value: Float): Float {
-            val clamped = value.coerceIn(0f, 1f)
-            return clamped * clamped * (3f - 2f * clamped)
-        }
-
-        private fun scaleColorAlpha(color: Int, alphaMultiplier: Float): Int {
-            val scaledAlpha = (((color ushr 24) and 0xFF) * alphaMultiplier.coerceIn(0f, 1f)).roundToInt()
-            return (color and 0x00FFFFFF) or (scaledAlpha.coerceIn(0, 255) shl 24)
+        private fun getFadeOutProgress(elapsedSinceFadeStartNanos: Long, fadeOutDurationNanos: Long): Float {
+            if (elapsedSinceFadeStartNanos < 0L) return 1f
+            if (fadeOutDurationNanos <= 0L) return 0f
+            return 1f - Animation.smoothStep((elapsedSinceFadeStartNanos.toDouble() / fadeOutDurationNanos.toDouble()).toFloat())
         }
 
         @JvmStatic
@@ -243,7 +270,7 @@ class NiChatClient : ClientModInitializer {
         ) {
             val playerSkin = client.connection?.getPlayerInfo(profile.id)?.skin ?: DefaultPlayerSkin.get(profile)
             val texture = playerSkin.body().texturePath()
-            val tint = scaleColorAlpha(0xFFFFFFFF.toInt(), alpha)
+            val tint = Animation.scaleColorAlpha(0xFFFFFFFF.toInt(), alpha)
 
             context.blit(
                 RenderPipelines.GUI_TEXTURED,
