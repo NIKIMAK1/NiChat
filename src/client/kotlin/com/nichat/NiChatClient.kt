@@ -56,7 +56,7 @@ class NiChatClient : ClientModInitializer {
                 }
             }
 
-            val newMessage = DisplayMessage(finalContent, profile, System.nanoTime())
+            val newMessage = DisplayMessage(finalContent, profile, System.nanoTime(), content)
 
             synchronized(allMessages) {
                 allMessages.add(newMessage)
@@ -89,12 +89,20 @@ class NiChatClient : ClientModInitializer {
             Translator.translate(parts.body, config.translation.targetLanguage).thenAccept { translated ->
                 if (translated == null) return@thenAccept
                 val translatedContent = parts.build(translated, message.content)
+                val translatedOriginal = if (message.originalContent === message.content) {
+                    translatedContent
+                } else {
+                    MessageTranslation.split(message.originalContent)
+                        ?.takeIf { it.body == parts.body }
+                        ?.build(translated, message.originalContent)
+                        ?: message.originalContent
+                }
 
                 Minecraft.getInstance().execute {
                     synchronized(allMessages) {
                         val index = allMessages.indexOfFirst { it === message }
                         if (index < 0) return@execute
-                        allMessages[index] = message.copy(content = translatedContent)
+                        allMessages[index] = message.copy(content = translatedContent, originalContent = translatedOriginal)
                     }
                     MessageLayoutCache.invalidateMessage(message)
                 }
@@ -147,17 +155,19 @@ class NiChatClient : ClientModInitializer {
         fun renderCustomHud(context: GuiGraphicsExtractor, client: Minecraft, hudOpacity: Float) {
             if (hudOpacity <= 0f) return
             val hudConfig = config.hud
-            val durationNanos = TimeUnit.SECONDS.toNanos(hudConfig.hudMessageDuration)
-            val fadeOutDurationNanos = TimeUnit.MILLISECONDS.toNanos(hudConfig.hudFadeOutDurationMs.coerceAtLeast(0L))
-            val animationOffsetPx = hudConfig.hudAnimationOffsetPx.coerceAtLeast(0).toFloat()
+            val classic = MessageLayout.isClassic
+            val durationNanos = TimeUnit.MILLISECONDS.toNanos(MessageLayout.hudDurationMs(hudConfig.hudMessageDuration))
+            val fadeOutDurationNanos = TimeUnit.MILLISECONDS.toNanos(MessageLayout.hudFadeOutMs(hudConfig.hudFadeOutDurationMs).coerceAtLeast(0L))
+            // Vanilla lines fade in place and are pushed out of the clipped area instead of being evicted.
+            val animationOffsetPx = if (classic) 0f else hudConfig.hudAnimationOffsetPx.coerceAtLeast(0).toFloat()
             val currentTime = System.nanoTime()
 
-            val maxMessages = hudConfig.hudMaxMessages.coerceAtLeast(1)
             val activeMessages = synchronized(allMessages) {
                 allMessages.filter { message ->
                     currentTime - message.receivedTimeNano <= durationNanos
                 }
             }
+            val maxMessages = if (classic) activeMessages.size else hudConfig.hudMaxMessages.coerceAtLeast(1)
 
             val disappearProgressByMessage = HashMap<DisplayMessage, Float>()
             val messagesToRender = activeMessages.filterIndexed { index, message ->
@@ -177,12 +187,12 @@ class NiChatClient : ClientModInitializer {
             val font = client.font
             val screenWidth = context.guiWidth()
             val screenHeight = context.guiHeight()
-            val maxTextWidth = (screenWidth * hudConfig.hudWidthScale).toInt()
+            val maxTextWidth = MessageLayout.hudTextWidth(screenWidth)
 
             val headSize = hudConfig.hudHeadSize
             val padding = hudConfig.hudPadding
             val headTextSpacing = hudConfig.hudHeadTextSpacing
-            val messagePadding = hudConfig.hudPaddingBetweenMessages
+            val messagePadding = MessageLayout.spacing(hudConfig.hudPaddingBetweenMessages)
 
             val messageBoxes = MessageLayoutCache.getBlocks(
                 font = font,
@@ -193,7 +203,11 @@ class NiChatClient : ClientModInitializer {
                 padding = padding
             )
 
-            var cursorY = (screenHeight - hudConfig.hudVerticalOffset).toFloat()
+            val hudBottomY = MessageLayout.hudBottomY(screenHeight)
+            var cursorY = hudBottomY.toFloat()
+            val textOpacity = MessageLayout.textOpacity()
+            val backgroundOpacity = MessageLayout.backgroundOpacity(hudConfig.hudBackgroundOpacity)
+            if (classic) context.enableScissor(0, MessageLayout.hudTopY(hudBottomY), screenWidth, hudBottomY)
             var stackShift = 0f
 
             for (box in messageBoxes.asReversed()) {
@@ -214,7 +228,7 @@ class NiChatClient : ClientModInitializer {
                 context.pose().pushMatrix()
                 context.pose().translate(0f, exactBottomY - boxBottomY)
 
-                val posX = when (hudConfig.hudHorizontalAlignment) {
+                val posX = if (classic) 0 else when (hudConfig.hudHorizontalAlignment) {
                     HorizontalAlignment.LEFT -> 10
                     HorizontalAlignment.CENTER -> (screenWidth - box.boxWidth) / 2
                     HorizontalAlignment.RIGHT -> screenWidth - box.boxWidth - 10
@@ -222,35 +236,31 @@ class NiChatClient : ClientModInitializer {
 
                 val boxTopY = boxBottomY - box.boxHeight
                 val backgroundColor = Animation.scaleColorAlpha(
-                    client.options.getBackgroundColor(hudConfig.hudBackgroundOpacity),
+                    client.options.getBackgroundColor(backgroundOpacity),
                     animationProgress
                 )
                 context.fill(posX, boxTopY, posX + box.boxWidth, boxBottomY, backgroundColor)
 
-                val contentTopY = boxTopY + padding
-                val contentHeight = box.boxHeight - padding * 2
-                val textLeftX: Int
+                val contentTopY = boxTopY + box.paddingY
+                val contentHeight = box.contentHeight
 
                 if (box.drawHead) {
-                    val contentLeftX = posX + padding
-                    val headY = contentTopY + (contentHeight - headSize) / 2
+                    val headY = contentTopY + box.headOffsetY
                     drawPlayerHead(
                         context,
                         client,
                         box.message.senderProfile,
-                        contentLeftX,
+                        posX + box.headOffsetX,
                         headY,
-                        headSize,
+                        box.headSize,
                         animationProgress
                     )
-                    textLeftX = posX + padding + headSize + headTextSpacing
-                } else {
-                    textLeftX = posX + (box.boxWidth - box.textWidth) / 2
                 }
+                val textLeftX = posX + box.textOffsetX
 
                 val verticalCenterOffset = (contentHeight - box.lines.size * font.lineHeight) / 2
                 var textTopY = contentTopY + verticalCenterOffset
-                val textColor = Animation.scaleColorAlpha(0xFFFFFFFF.toInt(), animationProgress)
+                val textColor = Animation.scaleColorAlpha(0xFFFFFFFF.toInt(), animationProgress * textOpacity)
 
                 for (line in box.lines) {
                     context.text(font, line, textLeftX, textTopY, textColor)
@@ -259,6 +269,8 @@ class NiChatClient : ClientModInitializer {
 
                 context.pose().popMatrix()
             }
+
+            if (classic) context.disableScissor()
         }
 
         private fun getFadeOutProgress(elapsedSinceFadeStartNanos: Long, fadeOutDurationNanos: Long): Float {

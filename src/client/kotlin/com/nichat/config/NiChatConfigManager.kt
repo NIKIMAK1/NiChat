@@ -52,6 +52,9 @@ object NiChatConfigManager {
     private fun copyInto(target: NiChatConfig, source: NiChatConfig) {
         target.general.nicknameColor = source.general.nicknameColor
         target.general.randomNicknameColor = source.general.randomNicknameColor
+        target.general.messageStyle = source.general.messageStyle ?: MessageStyle.MODERN
+        target.general.classicFormatting = source.general.classicFormatting
+        target.general.classicPlayerHeads = source.general.classicPlayerHeads
 
         target.hud.hudMessageDuration = source.hud.hudMessageDuration
         target.hud.hudMaxMessages = source.hud.hudMaxMessages
@@ -78,10 +81,13 @@ object NiChatConfigManager {
         target.chatLog.logChatLogInputPadding = source.chatLog.logChatLogInputPadding
         target.chatLog.logOpenAnimationMs = source.chatLog.logOpenAnimationMs
         target.chatLog.logFadeInDurationMs = source.chatLog.logFadeInDurationMs
+        target.chatLog.scrollbarEnabled = source.chatLog.scrollbarEnabled
 
         val translation = source.translation ?: NiChatConfig.TranslationSettings()
         target.translation.enabled = translation.enabled
         target.translation.targetLanguage = translation.targetLanguage ?: ""
         target.translation.translateOwnMessages = translation.translateOwnMessages
+        target.translation.translateOutgoing = translation.translateOutgoing
+        target.translation.outgoingLanguage = translation.outgoingLanguage ?: "en"
     }
 }

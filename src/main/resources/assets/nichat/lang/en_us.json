@@ -44,8 +44,17 @@
   "nichat.config.description.chat_log": "Adjust the chat history screen and scrolling behavior.",
   "nichat.config.category.translation": "Translation",
   "nichat.config.option.translation.enabled": "Translate Messages",
-  "nichat.config.option.translation.translateOwnMessages": "Translate Own Messages",
+  "nichat.config.option.translation.translateOwnMessages": "Translate Own in Chat",
   "nichat.config.option.translation.targetLanguage": "Target Language (empty = game)",
   "nichat.config.description.translation": "Automatically translate chat messages. Message text is sent to Google Translate.",
+  "nichat.config.option.translation.translateOutgoing": "Translate My Sent Messages",
+  "nichat.config.option.translation.outgoingLanguage": "Send Language (e.g. en)",
+  "nichat.translation.outgoingFailed": "NiChat: translation failed, the original message was sent.",
+  "nichat.config.option.general.messageStyle": "Message Style",
+  "nichat.config.enum.MessageStyle.MODERN": "Modern",
+  "nichat.config.enum.MessageStyle.CLASSIC": "Classic",
+  "nichat.config.option.general.classicFormatting": "Classic: Formatting",
+  "nichat.config.option.general.classicPlayerHeads": "Classic: Player Heads",
+  "nichat.config.option.chatLog.scrollbarEnabled": "Scrollbar",
   "modmenu.descriptionTranslation.nichat": "A mod with improved chat history and popup messages rendered over the game HUD."
 }

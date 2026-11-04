@@ -23,8 +23,10 @@ object ChatHistoryRenderer {
         val config = NiChatClient.config.chatLog
         val font = client.font
         val screenWidth = context.guiWidth()
-        val maxTextWidth = (screenWidth * config.logWidthScale).toInt()
-        val logTopY = 0
+        val maxTextWidth = MessageLayout.logTextWidth(screenWidth)
+        val logTopY = MessageLayout.logTopY(logBottomY)
+        val textOpacity = MessageLayout.textOpacity()
+        val backgroundOpacity = MessageLayout.backgroundOpacity(config.logBackgroundOpacity)
 
         context.enableScissor(0, logTopY, screenWidth, logBottomY)
 
@@ -46,9 +48,10 @@ object ChatHistoryRenderer {
         val now = System.nanoTime()
         var cursorY = (logBottomY + scrollOffset).toFloat()
         var stackShift = 0f
+        val messageSpacing = MessageLayout.spacing(config.logPaddingBetweenMessages)
 
         for (block in blocks.asReversed()) {
-            val blockSpacing = block.boxHeight + config.logPaddingBetweenMessages
+            val blockSpacing = block.boxHeight + messageSpacing
             val appearTime = Animation.linear(now - block.message.receivedTimeNano, config.logFadeInDurationMs)
             stackShift += (1f - Animation.easeOutCubic(appearTime)) * blockSpacing
             val alpha = Animation.smoothStep(appearTime) * opacity
@@ -63,27 +66,25 @@ object ChatHistoryRenderer {
             context.pose().pushMatrix()
             context.pose().translate(0f, exactBottomY - blockBottomY)
 
-            val blockLeftX = 2
+            val blockLeftX = MessageLayout.logLeftX()
             val backgroundColor = Animation.scaleColorAlpha(
-                client.options.getBackgroundColor(config.logBackgroundOpacity),
+                client.options.getBackgroundColor(backgroundOpacity),
                 alpha
             )
             context.fill(blockLeftX, blockTopY, blockLeftX + block.boxWidth, blockBottomY, backgroundColor)
 
-            val contentTopY = blockTopY + config.logPadding
-            val textLeftX = if (block.drawHead) {
-                val headX = blockLeftX + config.logPadding
-                val headY = contentTopY + (block.contentHeight - config.logHeadSize) / 2
-                NiChatClient.drawPlayerHead(context, client, block.message.senderProfile, headX, headY, config.logHeadSize, alpha)
-                headX + config.logHeadSize + config.logHeadTextSpacing
-            } else {
-                blockLeftX + (block.boxWidth - block.textWidth) / 2
+            val contentTopY = blockTopY + block.paddingY
+            if (block.drawHead) {
+                val headX = blockLeftX + block.headOffsetX
+                val headY = contentTopY + block.headOffsetY
+                NiChatClient.drawPlayerHead(context, client, block.message.senderProfile, headX, headY, block.headSize, alpha)
             }
+            val textLeftX = blockLeftX + block.textOffsetX
 
             var lineY = contentTopY + (block.contentHeight - block.lines.size * font.lineHeight) / 2
             val textParameters = textCollector.defaultParameters()
                 .withPose(Matrix3x2f(context.pose()))
-                .withOpacity(alpha)
+                .withOpacity(alpha * textOpacity)
             for (line in block.lines) {
                 textCollector.accept(TextAlignment.LEFT, textLeftX, lineY, textParameters, line)
                 lineY += font.lineHeight

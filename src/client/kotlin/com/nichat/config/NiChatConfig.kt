@@ -6,6 +6,11 @@ enum class HorizontalAlignment {
     RIGHT
 }
 
+enum class MessageStyle {
+    MODERN,
+    CLASSIC
+}
+
 class NiChatConfig {
     var general: GeneralSettings = GeneralSettings()
     var hud: HudSettings = HudSettings()
@@ -15,6 +20,9 @@ class NiChatConfig {
     class GeneralSettings {
         var nicknameColor: String = "14b414"
         var randomNicknameColor: Boolean = false
+        var messageStyle: MessageStyle = MessageStyle.MODERN
+        var classicFormatting: Boolean = false
+        var classicPlayerHeads: Boolean = false
     }
 
     class HudSettings {
@@ -45,11 +53,14 @@ class NiChatConfig {
         var logChatLogInputPadding: Int = 5
         var logOpenAnimationMs: Long = 180L
         var logFadeInDurationMs: Long = 220L
+        var scrollbarEnabled: Boolean = true
     }
 
     class TranslationSettings {
         var enabled: Boolean = false
         var targetLanguage: String = ""
         var translateOwnMessages: Boolean = false
+        var translateOutgoing: Boolean = false
+        var outgoingLanguage: String = "en"
     }
 }

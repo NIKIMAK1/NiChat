@@ -34,6 +34,9 @@ class NiChatConfigScreen(
 
     private var nicknameColorBox: EditBox? = null
     private var randomNicknameColorButton: CycleButton<Boolean>? = null
+    private var messageStyleButton: CycleButton<MessageStyle>? = null
+    private var classicFormattingButton: CycleButton<Boolean>? = null
+    private var classicPlayerHeadsButton: CycleButton<Boolean>? = null
 
     private var hudMessageDurationBox: EditBox? = null
     private var hudMaxMessagesBox: EditBox? = null
@@ -60,10 +63,13 @@ class NiChatConfigScreen(
     private var logChatLogInputPaddingBox: EditBox? = null
     private var logOpenAnimationMsBox: EditBox? = null
     private var logFadeInDurationMsBox: EditBox? = null
+    private var scrollbarEnabledButton: CycleButton<Boolean>? = null
 
     private var translationEnabledButton: CycleButton<Boolean>? = null
     private var translateOwnMessagesButton: CycleButton<Boolean>? = null
     private var translationTargetLanguageBox: EditBox? = null
+    private var translateOutgoingButton: CycleButton<Boolean>? = null
+    private var outgoingLanguageBox: EditBox? = null
 
     override fun init() {
         super.init()
@@ -148,6 +154,23 @@ class NiChatConfigScreen(
             250
         )
         list.addSingleRow(Component.translatable("nichat.config.option.general.randomNicknameColor"), randomNicknameColorButton!!, 250)
+
+        messageStyleButton = createCycleField(
+            Component.translatable("nichat.config.option.general.messageStyle"),
+            MessageStyle.entries.toList(),
+            config.messageStyle,
+            250
+        ) { style ->
+            Component.translatable("nichat.config.enum.MessageStyle.${style.name}")
+        }
+        list.addSingleRow(Component.translatable("nichat.config.option.general.messageStyle"), messageStyleButton!!, 250)
+
+        classicFormattingButton = createBooleanField(Component.translatable("nichat.config.option.general.classicFormatting"), config.classicFormatting, 150)
+        classicPlayerHeadsButton = createBooleanField(Component.translatable("nichat.config.option.general.classicPlayerHeads"), config.classicPlayerHeads, 150)
+        list.addDoubleRow(
+            EntryItem(Component.translatable("nichat.config.option.general.classicFormatting"), classicFormattingButton!!, 150),
+            EntryItem(Component.translatable("nichat.config.option.general.classicPlayerHeads"), classicPlayerHeadsButton!!, 150)
+        )
     }
 
     private fun initHudFields(list: ConfigList) {
@@ -242,8 +265,12 @@ class NiChatConfigScreen(
             EntryItem(Component.translatable("nichat.config.option.chatLog.logFadeInDurationMs"), logFadeInDurationMsBox!!, 150)
         )
 
-        logChatLogInputPaddingBox = createTextField(Component.translatable("nichat.config.option.chatLog.logChatLogInputPadding"), config.logChatLogInputPadding.toString(), 250)
-        list.addSingleRow(Component.translatable("nichat.config.option.chatLog.logChatLogInputPadding"), logChatLogInputPaddingBox!!, 250)
+        logChatLogInputPaddingBox = createTextField(Component.translatable("nichat.config.option.chatLog.logChatLogInputPadding"), config.logChatLogInputPadding.toString())
+        scrollbarEnabledButton = createBooleanField(Component.translatable("nichat.config.option.chatLog.scrollbarEnabled"), config.scrollbarEnabled, 150)
+        list.addDoubleRow(
+            EntryItem(Component.translatable("nichat.config.option.chatLog.logChatLogInputPadding"), logChatLogInputPaddingBox!!, 150),
+            EntryItem(Component.translatable("nichat.config.option.chatLog.scrollbarEnabled"), scrollbarEnabledButton!!, 150)
+        )
     }
 
     private fun initTranslationFields(list: ConfigList) {
@@ -257,6 +284,13 @@ class NiChatConfigScreen(
 
         translationTargetLanguageBox = createTextField(Component.translatable("nichat.config.option.translation.targetLanguage"), config.targetLanguage, 250)
         list.addSingleRow(Component.translatable("nichat.config.option.translation.targetLanguage"), translationTargetLanguageBox!!, 250)
+
+        translateOutgoingButton = createBooleanField(Component.translatable("nichat.config.option.translation.translateOutgoing"), config.translateOutgoing, 150)
+        outgoingLanguageBox = createTextField(Component.translatable("nichat.config.option.translation.outgoingLanguage"), config.outgoingLanguage)
+        list.addDoubleRow(
+            EntryItem(Component.translatable("nichat.config.option.translation.translateOutgoing"), translateOutgoingButton!!, 150),
+            EntryItem(Component.translatable("nichat.config.option.translation.outgoingLanguage"), outgoingLanguageBox!!, 150)
+        )
     }
 
     private fun createTextField(label: Component, value: String, width: Int = 150): EditBox {
@@ -291,6 +325,9 @@ class NiChatConfigScreen(
             Category.GENERAL -> {
                 config.general.nicknameColor = defaults.general.nicknameColor
                 config.general.randomNicknameColor = defaults.general.randomNicknameColor
+                config.general.messageStyle = defaults.general.messageStyle
+                config.general.classicFormatting = defaults.general.classicFormatting
+                config.general.classicPlayerHeads = defaults.general.classicPlayerHeads
             }
             Category.HUD -> {
                 config.hud.hudMessageDuration = defaults.hud.hudMessageDuration
@@ -319,11 +356,14 @@ class NiChatConfigScreen(
                 config.chatLog.logChatLogInputPadding = defaults.chatLog.logChatLogInputPadding
                 config.chatLog.logOpenAnimationMs = defaults.chatLog.logOpenAnimationMs
                 config.chatLog.logFadeInDurationMs = defaults.chatLog.logFadeInDurationMs
+                config.chatLog.scrollbarEnabled = defaults.chatLog.scrollbarEnabled
             }
             Category.TRANSLATION -> {
                 config.translation.enabled = defaults.translation.enabled
                 config.translation.targetLanguage = defaults.translation.targetLanguage
                 config.translation.translateOwnMessages = defaults.translation.translateOwnMessages
+                config.translation.translateOutgoing = defaults.translation.translateOutgoing
+                config.translation.outgoingLanguage = defaults.translation.outgoingLanguage
             }
         }
     }
@@ -341,6 +381,9 @@ class NiChatConfigScreen(
                 val general = config.general
                 general.nicknameColor = nicknameColorBox?.value?.trim()?.ifBlank { general.nicknameColor } ?: general.nicknameColor
                 general.randomNicknameColor = randomNicknameColorButton?.value ?: general.randomNicknameColor
+                general.messageStyle = messageStyleButton?.value ?: general.messageStyle
+                general.classicFormatting = classicFormattingButton?.value ?: general.classicFormatting
+                general.classicPlayerHeads = classicPlayerHeadsButton?.value ?: general.classicPlayerHeads
             }
             Category.HUD -> {
                 val hud = config.hud
@@ -371,12 +414,15 @@ class NiChatConfigScreen(
                 chatLog.logChatLogInputPadding = parseInt(logChatLogInputPaddingBox?.value, chatLog.logChatLogInputPadding)
                 chatLog.logOpenAnimationMs = parseLong(logOpenAnimationMsBox?.value, chatLog.logOpenAnimationMs)
                 chatLog.logFadeInDurationMs = parseLong(logFadeInDurationMsBox?.value, chatLog.logFadeInDurationMs)
+                chatLog.scrollbarEnabled = scrollbarEnabledButton?.value ?: chatLog.scrollbarEnabled
             }
             Category.TRANSLATION -> {
                 val translation = config.translation
                 translation.enabled = translationEnabledButton?.value ?: translation.enabled
                 translation.targetLanguage = translationTargetLanguageBox?.value?.trim() ?: translation.targetLanguage
                 translation.translateOwnMessages = translateOwnMessagesButton?.value ?: translation.translateOwnMessages
+                translation.translateOutgoing = translateOutgoingButton?.value ?: translation.translateOutgoing
+                translation.outgoingLanguage = outgoingLanguageBox?.value?.trim()?.ifBlank { "en" } ?: translation.outgoingLanguage
             }
         }
     }
@@ -389,6 +435,9 @@ class NiChatConfigScreen(
     private fun copyConfig(target: NiChatConfig, source: NiChatConfig) {
         target.general.nicknameColor = source.general.nicknameColor
         target.general.randomNicknameColor = source.general.randomNicknameColor
+        target.general.messageStyle = source.general.messageStyle
+        target.general.classicFormatting = source.general.classicFormatting
+        target.general.classicPlayerHeads = source.general.classicPlayerHeads
 
         target.hud.hudMessageDuration = source.hud.hudMessageDuration
         target.hud.hudMaxMessages = source.hud.hudMaxMessages
@@ -415,10 +464,13 @@ class NiChatConfigScreen(
         target.chatLog.logChatLogInputPadding = source.chatLog.logChatLogInputPadding
         target.chatLog.logOpenAnimationMs = source.chatLog.logOpenAnimationMs
         target.chatLog.logFadeInDurationMs = source.chatLog.logFadeInDurationMs
+        target.chatLog.scrollbarEnabled = source.chatLog.scrollbarEnabled
 
         target.translation.enabled = source.translation.enabled
         target.translation.targetLanguage = source.translation.targetLanguage
         target.translation.translateOwnMessages = source.translation.translateOwnMessages
+        target.translation.translateOutgoing = source.translation.translateOutgoing
+        target.translation.outgoingLanguage = source.translation.outgoingLanguage
     }
 
     private inner class ConfigList(

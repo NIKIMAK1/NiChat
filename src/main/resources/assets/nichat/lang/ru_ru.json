@@ -44,8 +44,17 @@
   "nichat.config.description.chat_log": "Параметры экрана истории чата и прокрутки.",
   "nichat.config.category.translation": "Перевод",
   "nichat.config.option.translation.enabled": "Переводить сообщения",
-  "nichat.config.option.translation.translateOwnMessages": "Переводить свои сообщения",
+  "nichat.config.option.translation.translateOwnMessages": "Переводить свои в чате",
   "nichat.config.option.translation.targetLanguage": "Язык перевода (пусто = язык игры)",
   "nichat.config.description.translation": "Автоматический перевод сообщений чата. Текст сообщений отправляется в Google Переводчик.",
+  "nichat.config.option.translation.translateOutgoing": "Переводить мои сообщения",
+  "nichat.config.option.translation.outgoingLanguage": "Язык отправки (например, en)",
+  "nichat.translation.outgoingFailed": "NiChat: не удалось перевести, отправлен оригинал.",
+  "nichat.config.option.general.messageStyle": "Вид сообщений",
+  "nichat.config.enum.MessageStyle.MODERN": "Современный",
+  "nichat.config.enum.MessageStyle.CLASSIC": "Классический",
+  "nichat.config.option.general.classicFormatting": "Классика: форматирование",
+  "nichat.config.option.general.classicPlayerHeads": "Классика: головы игроков",
+  "nichat.config.option.chatLog.scrollbarEnabled": "Полоса прокрутки",
   "modmenu.descriptionTranslation.nichat": "Мод с удобной историей чата и всплывающими сообщениями поверх игрового интерфейса."
 }

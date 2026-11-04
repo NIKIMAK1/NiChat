@@ -21,6 +21,7 @@ object Translator {
     private const val MAX_WAIT_NANOS = 8_000_000_000L
     private const val MIN_BACKOFF_MS = 30_000L
     private const val MAX_BACKOFF_MS = 600_000L
+    private val REQUEST_TIMEOUT: Duration = Duration.ofSeconds(10)
     private val CYRILLIC_TARGETS = setOf("ru", "uk", "be", "bg", "sr", "mk", "kk", "ky", "mn", "tg")
     private val LATIN_LETTER = Regex("""\p{IsLatin}""")
 
@@ -75,6 +76,19 @@ object Translator {
         return future
     }
 
+    fun translateNow(text: String, targetLanguage: String, timeout: Duration): CompletableFuture<String?> {
+        val target = targetLanguage.trim().ifEmpty { "en" }
+        val key = CacheKey(target, text)
+        synchronized(cache) {
+            cache[key]?.let { return CompletableFuture.completedFuture(it.translated) }
+        }
+
+        return requestTranslation(text, target, timeout).thenApply { translated ->
+            synchronized(cache) { cache[key] = Result(translated) }
+            translated
+        }
+    }
+
     private fun processNext() {
         val job = synchronized(lock) {
             if (running) return
@@ -92,7 +106,7 @@ object Translator {
             next
         }
 
-        requestTranslation(job.key.text, job.key.target).whenComplete { translated, error ->
+        requestTranslation(job.key.text, job.key.target, REQUEST_TIMEOUT).whenComplete { translated, error ->
             synchronized(lock) {
                 running = false
                 if (error == null) {
@@ -114,12 +128,12 @@ object Translator {
         }
     }
 
-    private fun requestTranslation(text: String, target: String): CompletableFuture<String?> {
+    private fun requestTranslation(text: String, target: String, timeout: Duration): CompletableFuture<String?> {
         val url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&dt=t" +
             "&tl=" + encode(target) +
             "&q=" + encode(text)
         val request = HttpRequest.newBuilder(URI.create(url))
-            .timeout(Duration.ofSeconds(10))
+            .timeout(timeout)
             .GET()
             .build()
 
