@@ -1,55 +1,29 @@
 package com.nichat.translation
 
+import com.nichat.StyledText
 import net.minecraft.network.chat.Component
-import net.minecraft.network.chat.FormattedText
 import net.minecraft.network.chat.HoverEvent
-import net.minecraft.network.chat.Style
-import java.util.Optional
 
 object MessageTranslation {
     private const val MAX_PREFIX_LENGTH = 40
     private val PREFIX_SEPARATOR = Regex("""\S(: |> |» | → )""")
     private val LETTER = Regex("""\p{L}""")
 
-    data class Segment(val style: Style, val text: String)
-
     class Parts internal constructor(
-        private val segments: List<Segment>,
+        private val styled: StyledText,
         private val prefixLength: Int,
         val body: String
     ) {
         fun build(translatedBody: String, original: Component): Component {
-            val result = Component.empty()
-            var remaining = prefixLength
-            var bodyStyle = Style.EMPTY
-
-            for (segment in segments) {
-                if (remaining <= 0) {
-                    bodyStyle = segment.style
-                    break
-                }
-                val taken = segment.text.take(remaining)
-                result.append(Component.literal(taken).setStyle(segment.style))
-                remaining -= taken.length
-                if (taken.length < segment.text.length) {
-                    bodyStyle = segment.style
-                    break
-                }
-            }
-
-            val translatedStyle = bodyStyle.withHoverEvent(HoverEvent.ShowText(original))
-            return result.append(Component.literal(translatedBody).setStyle(translatedStyle))
+            val bodyStyle = styled.styleAt(prefixLength).withHoverEvent(HoverEvent.ShowText(original))
+            return styled.toComponent(0, prefixLength)
+                .append(Component.literal(translatedBody).setStyle(bodyStyle))
         }
     }
 
     fun split(message: Component): Parts? {
-        val segments = mutableListOf<Segment>()
-        message.visit(FormattedText.StyledContentConsumer<Unit> { style, text ->
-            if (text.isNotEmpty()) segments.add(Segment(style, text))
-            Optional.empty()
-        }, Style.EMPTY)
-
-        val full = segments.joinToString("") { it.text }
+        val styled = StyledText.of(message)
+        val full = styled.plain
         val prefixLength = PREFIX_SEPARATOR.find(full)
             ?.takeIf { it.range.last < MAX_PREFIX_LENGTH }
             ?.let { it.range.last + 1 }
@@ -60,6 +34,6 @@ object MessageTranslation {
         if (!LETTER.containsMatchIn(body)) return null
 
         val leadingSpaces = rest.length - rest.trimStart().length
-        return Parts(segments, prefixLength + leadingSpaces, body)
+        return Parts(styled, prefixLength + leadingSpaces, body)
     }
 }

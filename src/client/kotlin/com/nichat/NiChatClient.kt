@@ -10,7 +10,6 @@ import net.fabricmc.api.ClientModInitializer
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
-import net.minecraft.client.resources.DefaultPlayerSkin
 import net.minecraft.client.renderer.RenderPipelines
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.Style
@@ -44,10 +43,19 @@ class NiChatClient : ClientModInitializer {
         private const val FACE_REGION_SIZE = 8
 
         @JvmStatic
-        fun processNewMessage(content: Component, profile: GameProfile) {
+        fun processNewMessage(content: Component, receivedProfile: GameProfile) {
             if (content.string.isBlank()) return
 
-            val finalContent = reformatChatMessage(content, profile)
+            var profile = receivedProfile
+            var finalContent = reformatChatMessage(content, profile)
+
+            if (profile == SYSTEM_PROFILE && content.contents !is TranslatableContents) {
+                ServerChatSender.detect(content, ::nicknameColor)?.let { detected ->
+                    profile = detected.profile
+                    finalContent = detected.content
+                }
+            }
+
             val newMessage = DisplayMessage(finalContent, profile, System.nanoTime())
 
             synchronized(allMessages) {
@@ -93,6 +101,25 @@ class NiChatClient : ClientModInitializer {
             }
         }
 
+        private fun nicknameColor(senderName: String): TextColor {
+            if (config.general.randomNicknameColor) {
+                val random = Random(senderName.hashCode().toLong())
+                val r = random.nextInt(155) + 100
+                val g = random.nextInt(155) + 100
+                val b = random.nextInt(155) + 100
+                return TextColor.fromRgb((r shl 16) or (g shl 8) or b)
+            }
+
+            val rawColor = config.general.nicknameColor.trim()
+            val colorInt = try {
+                Integer.parseInt(rawColor.removePrefix("#"), 16)
+            } catch (e: Exception) {
+                logger.warn("Invalid nickname color in config: '{}'", rawColor)
+                0x55FF55
+            }
+            return TextColor.fromRgb(colorInt)
+        }
+
         private fun reformatChatMessage(originalMessage: Component, profile: GameProfile): Component {
             if (profile == SYSTEM_PROFILE) {
                 return originalMessage
@@ -103,25 +130,7 @@ class NiChatClient : ClientModInitializer {
                 val senderName = (content.args[0] as? Component)?.string ?: profile.name
                 val messageBody = content.args[1] as? Component ?: return originalMessage
 
-                val color: TextColor = if (config.general.randomNicknameColor) {
-                    val random = Random(senderName.hashCode().toLong())
-                    val r = random.nextInt(155) + 100
-                    val g = random.nextInt(155) + 100
-                    val b = random.nextInt(155) + 100
-                    TextColor.fromRgb((r shl 16) or (g shl 8) or b)
-                } else {
-                    val rawColor = config.general.nicknameColor.trim()
-                    val colorHex = rawColor.removePrefix("#")
-
-                    val colorInt = try {
-                        Integer.parseInt(colorHex, 16)
-                    } catch (e: Exception) {
-                        logger.warn("Invalid nickname color in config: '{}'", rawColor)
-                        0x55FF55
-                    }
-
-                    TextColor.fromRgb(colorInt)
-                }
+                val color = nicknameColor(senderName)
 
                 return Component.empty()
                     .append(Component.literal("[").setStyle(Style.EMPTY.withColor(color)))
@@ -268,7 +277,7 @@ class NiChatClient : ClientModInitializer {
             size: Int,
             alpha: Float
         ) {
-            val playerSkin = client.connection?.getPlayerInfo(profile.id)?.skin ?: DefaultPlayerSkin.get(profile)
+            val playerSkin = PlayerSkins.get(client, profile)
             val texture = playerSkin.body().texturePath()
             val tint = Animation.scaleColorAlpha(0xFFFFFFFF.toInt(), alpha)
 
