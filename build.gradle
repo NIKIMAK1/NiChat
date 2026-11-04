@@ -2,6 +2,7 @@ plugins {
     id 'net.fabricmc.fabric-loom' version "${loom_version}"
     id 'maven-publish'
     id "org.jetbrains.kotlin.jvm" version "2.3.0"
+    id "com.modrinth.minotaur" version "2.10.0"
 }
 
 version = project.mod_version
@@ -129,5 +130,25 @@ publishing {
         // Notice: This block does NOT have the same function as the block in the top level.
         // The repositories here will be used for publishing your artifact, not for
         // retrieving dependencies.
+    }
+}
+
+modrinth {
+    token = providers.gradleProperty("modrinth_token")
+            .orElse(providers.environmentVariable("MODRINTH_TOKEN"))
+    projectId = "nichat"
+    versionNumber = project.version
+    versionName = "NiChat ${project.version}"
+    versionType = "release"
+    uploadFile = jar
+    gameVersions = [project.minecraft_version]
+    loaders = ["fabric"]
+    changelog = providers.environmentVariable("MODRINTH_CHANGELOG")
+            .orElse(providers.fileContents(layout.projectDirectory.file("CHANGELOG.md")).asText)
+    debugMode = System.getenv("MODRINTH_DEBUG") != null
+    dependencies {
+        required.project "fabric-api"
+        required.project "fabric-language-kotlin"
+        optional.project "modmenu"
     }
 }
