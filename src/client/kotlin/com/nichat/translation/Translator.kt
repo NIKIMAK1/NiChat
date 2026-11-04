@@ -11,12 +11,18 @@ import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.nio.charset.StandardCharsets
 import java.time.Duration
+import java.util.ArrayDeque
 import java.util.concurrent.CompletableFuture
 
 object Translator {
     private val logger = LoggerFactory.getLogger("nichat")
     private const val CACHE_SIZE = 512
-    private const val ERROR_LOG_INTERVAL_MS = 60_000L
+    private const val MAX_QUEUE_SIZE = 6
+    private const val MAX_WAIT_NANOS = 8_000_000_000L
+    private const val MIN_BACKOFF_MS = 30_000L
+    private const val MAX_BACKOFF_MS = 600_000L
+    private val CYRILLIC_TARGETS = setOf("ru", "uk", "be", "bg", "sr", "mk", "kk", "ky", "mn", "tg")
+    private val LATIN_LETTER = Regex("""\p{IsLatin}""")
 
     private val httpClient: HttpClient = HttpClient.newBuilder()
         .connectTimeout(Duration.ofSeconds(5))
@@ -26,29 +32,86 @@ object Translator {
 
     private class Result(val translated: String?)
 
+    private class Job(
+        val key: CacheKey,
+        val future: CompletableFuture<String?>,
+        val queuedAt: Long = System.nanoTime()
+    )
+
     private val cache = object : LinkedHashMap<CacheKey, Result>(64, 0.75f, true) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<CacheKey, Result>): Boolean = size > CACHE_SIZE
     }
 
-    @Volatile private var lastErrorLogTime = 0L
+    private val lock = Any()
+    private val queue = ArrayDeque<Job>()
+    private var running = false
+    private var pausedUntilMs = 0L
+    private var backoffMs = MIN_BACKOFF_MS
 
     fun translate(text: String, targetLanguage: String): CompletableFuture<String?> {
         val target = resolveTargetLanguage(targetLanguage)
-        val key = CacheKey(target, text)
-
-        synchronized(cache) {
-            cache[key]?.let { return CompletableFuture.completedFuture(it.translated) }
+        if (target.substringBefore('-').lowercase() in CYRILLIC_TARGETS && !LATIN_LETTER.containsMatchIn(text)) {
+            return CompletableFuture.completedFuture(null)
         }
 
-        return requestTranslation(text, target)
-            .thenApply { translated ->
-                synchronized(cache) { cache[key] = Result(translated) }
-                translated
+        val key = CacheKey(target, text)
+        val future = CompletableFuture<String?>()
+
+        synchronized(lock) {
+            synchronized(cache) {
+                cache[key]?.let { return CompletableFuture.completedFuture(it.translated) }
             }
-            .exceptionally { error ->
-                logError(error)
-                null
+            if (System.currentTimeMillis() < pausedUntilMs) {
+                return CompletableFuture.completedFuture(null)
             }
+
+            queue.addLast(Job(key, future))
+            while (queue.size > MAX_QUEUE_SIZE) {
+                queue.removeFirst().future.complete(null)
+            }
+        }
+
+        processNext()
+        return future
+    }
+
+    private fun processNext() {
+        val job = synchronized(lock) {
+            if (running) return
+            var next: Job? = null
+            while (next == null && queue.isNotEmpty()) {
+                val candidate = queue.removeFirst()
+                if (System.nanoTime() - candidate.queuedAt > MAX_WAIT_NANOS || System.currentTimeMillis() < pausedUntilMs) {
+                    candidate.future.complete(null)
+                } else {
+                    next = candidate
+                }
+            }
+            if (next == null) return
+            running = true
+            next
+        }
+
+        requestTranslation(job.key.text, job.key.target).whenComplete { translated, error ->
+            synchronized(lock) {
+                running = false
+                if (error == null) {
+                    backoffMs = MIN_BACKOFF_MS
+                } else {
+                    pausedUntilMs = System.currentTimeMillis() + backoffMs
+                    logError(error, backoffMs)
+                    backoffMs = (backoffMs * 2).coerceAtMost(MAX_BACKOFF_MS)
+                }
+            }
+
+            if (error == null) {
+                synchronized(cache) { cache[job.key] = Result(translated) }
+                job.future.complete(translated)
+            } else {
+                job.future.complete(null)
+            }
+            processNext()
+        }
     }
 
     private fun requestTranslation(text: String, target: String): CompletableFuture<String?> {
@@ -92,11 +155,13 @@ object Translator {
 
     private fun JsonArray.getOrNull(index: Int) = if (index in 0 until size()) get(index) else null
 
-    private fun logError(error: Throwable) {
-        val now = System.currentTimeMillis()
-        if (now - lastErrorLogTime < ERROR_LOG_INTERVAL_MS) return
-        lastErrorLogTime = now
+    private fun logError(error: Throwable, pauseMs: Long) {
         val cause = generateSequence(error) { it.cause }.last()
-        logger.warn("Translation failed: {}: {}", cause.javaClass.simpleName, cause.message)
+        logger.warn(
+            "Translation failed: {}: {}. Pausing translation for {} s",
+            cause.javaClass.simpleName,
+            cause.message,
+            pauseMs / 1000
+        )
     }
 }

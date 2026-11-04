@@ -35,9 +35,13 @@ object ServerChatSender {
         val profile = playerInfo?.profile ?: GameProfile(offlineId(name), name)
         val nameStart = match.groups[2]!!.range.first
         val color = nicknameColor(name)
-        val content = styled
-            .restyle(nameStart, nameStart + name.length) { it.withColor(color) }
-            .toComponent()
+        val nameEnd = nameStart + name.length
+        val bracketStyle = styled.styleAt(nameStart).withColor(color)
+        val content = styled.toComponent(0, nameStart)
+            .append(Component.literal("[").setStyle(bracketStyle))
+            .append(styled.restyle(nameStart, nameEnd) { it.withColor(color) }.toComponent(nameStart, nameEnd))
+            .append(Component.literal("]").setStyle(bracketStyle))
+            .append(styled.toComponent(nameEnd, plain.length))
 
         return Result(profile, content)
     }
