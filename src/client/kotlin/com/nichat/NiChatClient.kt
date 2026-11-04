@@ -287,7 +287,9 @@ class NiChatClient : ClientModInitializer {
             false
         }
 
-        ClientReceiveMessageEvents.ALLOW_GAME.register { message, _ ->
+        ClientReceiveMessageEvents.ALLOW_GAME.register { message, overlay ->
+            if (overlay) return@register true
+
             processNewMessage(message, SYSTEM_PROFILE)
             false
         }
