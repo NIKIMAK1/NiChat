@@ -1,4 +1,4 @@
 ## Fixed
-- Player heads and nickname colors now work on servers that send player chat as plain server messages (such as Hypixel). Server ranks keep their colors, while the nickname uses the NiChat color.
-- Heads are shown for players outside your lobby too (guild, party and private messages); their skins are loaded in the background.
-- Legacy `§` color codes in server messages are now handled correctly when translating messages.
+- Nicknames in server-formatted chat (such as Hypixel) are now wrapped in NiChat brackets, matching other servers: `[MVP+] [Nick]: message`.
+- Translation no longer floods Google Translate in busy chats: requests are sent one at a time, stale messages are skipped, and translation pauses after errors such as rate limiting (HTTP 429).
+- Messages without Latin letters are no longer sent for translation when the target language uses Cyrillic.
